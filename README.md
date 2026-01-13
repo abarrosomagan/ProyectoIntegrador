@@ -6,6 +6,14 @@ El proyecto se desarrolla de forma progresiva y se irá **actualizando poco a po
 
 ---
 
+## Diseño en Figma
+
+El diseño completo de la aplicación ha sido realizado en Figma y sirve como referencia visual y funcional para la implementación del proyecto.
+
+https://www.figma.com/design/yHjedo6Y4G4Co4WEa7LY2A/Sin-t%C3%ADtulo?node-id=0-1&p=f&t=fkQQFC4GstUwoPPk-0
+
+---
+
 ## Contexto del proyecto
 
 Este proyecto forma parte del **Proyecto Integrador** del ciclo formativo de **Desarrollo de Aplicaciones Multiplataforma (DAM)**.
