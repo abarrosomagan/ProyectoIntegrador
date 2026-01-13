@@ -77,9 +77,6 @@ A continuación se muestran las principales pantallas diseñadas en Figma, que d
 #### Mensajes
 ![Mensajes](images/messages.png)
 
-#### Estado vacío de mensajes
-![Estado vacío de mensajes](images/messages-empty.png)
-
 #### Recetas guardadas
 ![Recetas guardadas](images/saved.png)
 
