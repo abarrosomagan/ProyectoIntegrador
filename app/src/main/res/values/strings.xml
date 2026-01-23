@@ -1,3 +1,24 @@
 <resources>
-    <string name="app_name">ProyectoIntegrador</string>
+
+    <string name="app_name">Sazón</string>
+
+    <string name="loading">Cargando</string>
+
+    <string name="create_account">Crear cuenta</string>
+    <string name="login">Iniciar sesión</string>
+    <string name="register">Registrarse</string>
+    <string name="email">Correo electrónico</string>
+    <string name="password">Contraseña</string>
+    <string name="full_name">Nombre completo</string>
+    <string name="accept_terms">Acepto términos y condiciones</string>
+    <string name="already_account">¿Ya tienes cuenta?</string>
+
+    <string name="search_recipes">Buscar recetas…</string>
+
+    <string name="messages">Mensajes</string>
+    <string name="no_messages">No tienes más mensajes</string>
+    <string name="messages_placeholder">Aquí aparecerán tus conversaciones</string>
+
+    <string name="saved">Guardados</string>
+
 </resources>
