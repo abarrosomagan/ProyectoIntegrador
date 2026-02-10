@@ -1,49 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
     <!-- COLORES PRINCIPALES -->
 
-        <!-- Naranja principal (fondo cabeceras / identidad) -->
-    <color name="color_primary">#F5AB60</color>
+    <!-- Naranja principal (fondo cabeceras / identidad) -->
+    <color name="color_principal">#F5AB60</color>
 
-        <!-- Naranja secundario (CTA, botones, estados activos) -->
-    <color name="color_primary_variant">#E2874C</color>
+    <!-- Naranja secundario (CTA, botones, estados activos) -->
+    <color name="color_principal_variante">#E2874C</color>
+
 
     <!-- FONDOS -->
 
-        <!-- Fondo general de la app -->
-    <color name="color_background">#FFF7F2</color>
+    <!-- Fondo general de la app -->
+    <color name="fondo_app">#FFF7F2</color>
 
-        <!-- Superficies: cards, contenedores -->
-    <color name="color_surface">#FFFFFF</color>
+    <!-- Superficies: cards, contenedores -->
+    <color name="fondo_superficie">#FFFFFF</color>
+
 
     <!-- TEXTO -->
 
-        <!-- Texto principal -->
-    <color name="text_primary">#2B2B2B</color>
+    <!-- Texto principal -->
+    <color name="texto_principal">#2B2B2B</color>
 
-        <!-- Texto secundario -->
-    <color name="text_secondary">#7A6E66</color>
+    <!-- Texto secundario -->
+    <color name="texto_secundario">#7A6E66</color>
 
-        <!-- Texto sobre color primary -->
-    <color name="text_on_primary">#FFFFFF</color>
+    <!-- Texto sobre color principal -->
+    <color name="texto_sobre_principal">#FFFFFF</color>
+
 
     <!-- ICONOS -->
 
-        <!-- Iconos activos -->
-    <color name="icon_active">#E2874C</color>
+    <!-- Iconos activos -->
+    <color name="icono_activo">#E2874C</color>
 
-        <!-- Iconos inactivos -->
-    <color name="icon_inactive">#7A6E66</color>
+    <!-- Iconos inactivos -->
+    <color name="icono_inactivo">#7A6E66</color>
+
 
     <!-- ESTADOS / SOCIAL -->
 
-        <!-- Like / Favorito -->
+    <!-- Like / Favorito -->
     <color name="color_like">#D96C6C</color>
 
-        <!-- Guardados / Bookmark -->
-    <color name="color_bookmark">#B8A89A</color>
+    <!-- Guardados / Bookmark -->
+    <color name="color_guardado">#B8A89A</color>
 
-        <!-- Saludable / Vegano -->
-    <color name="color_healthy">#7FB77E</color>
+    <!-- Saludable / Vegano -->
+    <color name="color_saludable">#7FB77E</color>
 
 </resources>

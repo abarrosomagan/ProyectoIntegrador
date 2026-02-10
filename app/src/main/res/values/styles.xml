@@ -1,26 +1,28 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
 
     <style name="Button.Primary">
-        <item name="android:backgroundTint">@color/sazon_primary</item>
-        <item name="android:textColor">@color/sazon_card</item>
+        <item name="android:backgroundTint">@android:color/holo_orange_dark</item>
+        <item name="android:textColor">@android:color/white</item>
         <item name="android:fontFamily">@font/abel</item>
     </style>
 
     <style name="Text.Title">
         <item name="android:textSize">20sp</item>
-        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textColor">@android:color/black</item>
         <item name="android:fontFamily">@font/abel</item>
     </style>
 
     <style name="Text.Body">
         <item name="android:textSize">14sp</item>
-        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:textColor">@android:color/darker_gray</item>
         <item name="android:fontFamily">@font/abel</item>
     </style>
 
+    <!-- ✅ ALIAS para compatibilidad con layouts antiguos -->
+    <style name="Button" parent="Button.Primary" />
+    <style name="Text" parent="Text.Body" />
 
-
-
-
+    <style name="TemaSplash" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/color_principal</item>
+    </style>
 </resources>

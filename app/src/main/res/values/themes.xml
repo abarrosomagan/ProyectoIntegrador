@@ -1,18 +1,6 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
     <style name="Base.Theme.ProyectoIntegrador" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
-    </style>
-
-    <style name="Theme.Sazon" parent="Theme.Material3.Light.NoActionBar">
-        <item name="colorPrimary">@color/sazon_primary</item>
-        <item name="colorSecondary">@color/sazon_primary_light</item>
-        <item name="android:colorBackground">@color/sazon_background</item>
-
-        <item name="android:textColorPrimary">@color/text_primary</item>
-        <item name="android:textColorSecondary">@color/text_secondary</item>
-
+        <!-- Personalización más adelante -->
         <item name="android:fontFamily">@font/abel</item>
     </style>
 
