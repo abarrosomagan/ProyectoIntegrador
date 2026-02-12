@@ -14,14 +14,15 @@ public class SplashActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // IMPORTANTÍSIMO: aplicar tema normal antes de inflar la vista
+        setTheme(R.style.Base_Theme_ProyectoIntegrador);
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
 
-        // Delay antes de pasar a la siguiente pantalla
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            startActivity(new Intent(SplashActivity.this, MainActivity.class));
+            startActivity(new Intent(SplashActivity.this, LoginActivity.class));
             finish();
-            // Evita volver al splash al pulsar atrás
-        }, DURACION_SPLASH_MS);
+        }, 2000);
     }
 }

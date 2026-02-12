@@ -15,24 +15,25 @@
         android:layout_height="410dp"
         android:contentDescription="@string/app_name"
         android:src="@mipmap/ic_launcher_foreground"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:tint="@color/texto_sobre_principal" />
 
     <!-- Barra de carga justo debajo del logo -->
     <ProgressBar
-        style="?android:attr/progressBarStyleHorizontal"
         android:id="@+id/cargando_barra"
+        style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="220dp"
-        android:layout_height="wrap_content"
+        android:layout_height="8dp"
         android:layout_marginTop="16dp"
         android:indeterminate="true"
         android:indeterminateTint="@color/texto_sobre_principal"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.497"
+        android:progressTint="@color/texto_sobre_principal"
+        android:progressBackgroundTint="@color/color_principal_variante"
+        app:layout_constraintTop_toBottomOf="@id/logo_app"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/logo_app" />
+        app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
