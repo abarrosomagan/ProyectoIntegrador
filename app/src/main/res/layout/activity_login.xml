@@ -108,7 +108,7 @@
                     android:layout_gravity="center_horizontal"
                     android:layout_marginTop="10dp"
                     android:text="¿Has olvidado la contraseña?"
-                    android:textColor="@color/color_principal""
+                    android:textColor="@color/color_principal"
                     android:textSize="13sp" />
 
                 <!-- Separador -->
