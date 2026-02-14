@@ -25,9 +25,10 @@
         <!-- Logo arriba -->
         <ImageView
             android:id="@+id/uso_logo_login"
-            android:layout_width="72dp"
-            android:layout_height="72dp"
-            android:contentDescription="@string/app_name"
+            android:layout_width="match_parent"
+            android:layout_height="160dp"
+            android:layout_marginTop="16dp"
+            android:scaleType="centerCrop"
             android:src="@drawable/logo_sazon" />
 
         <!-- Título -->
@@ -107,7 +108,7 @@
                     android:layout_gravity="center_horizontal"
                     android:layout_marginTop="10dp"
                     android:text="¿Has olvidado la contraseña?"
-                    android:textColor="@color/texto_secundario"
+                    android:textColor="@color/color_principal""
                     android:textSize="13sp" />
 
                 <!-- Separador -->
@@ -165,7 +166,7 @@
                     android:layout_gravity="center_horizontal"
                     android:layout_marginTop="14dp"
                     android:text="Crear cuenta"
-                    android:textColor="@color/texto_secundario"
+                    android:textColor="@color/color_principal"
                     android:textSize="13sp"
                     android:textStyle="bold" />
 
