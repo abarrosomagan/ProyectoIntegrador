@@ -38,7 +38,6 @@ public class LoginActivity extends AppCompatActivity {
         usoBotonGoogle.setOnClickListener(v ->
                 Toast.makeText(this, "Login con Google (pendiente)", Toast.LENGTH_SHORT).show()
         );
-
         usoBotonIniciarSesion.setOnClickListener(v -> {
             String correo = usoCampoCorreo.getText() != null ? usoCampoCorreo.getText().toString().trim() : "";
             String contrasena = usoCampoContrasena.getText() != null ? usoCampoContrasena.getText().toString().trim() : "";
@@ -55,9 +54,14 @@ public class LoginActivity extends AppCompatActivity {
                 return;
             }
 
+            usoCampoCorreo.setError(null);
+            usoCampoContrasena.setError(null);
+
             // Login simulado (de momento)
-            startActivity(new Intent(LoginActivity.this, MainActivity.class));
-            finish();
+            Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
         });
+
     }
 }
