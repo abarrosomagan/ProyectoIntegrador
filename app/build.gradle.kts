@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.proyectointegrador"
+    namespace = "com.sazon.proyectointegrador"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.proyectointegrador"
+        applicationId = "com.sazon.proyectointegrador"
         minSdk = 28
         targetSdk = 36
         versionCode = 1

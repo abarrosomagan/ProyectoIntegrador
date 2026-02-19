@@ -1,4 +1,4 @@
-package com.example.proyectointegrador;
+package com.sazon.proyectointegrador;
 
 import android.content.Intent;
 import android.os.Bundle;
