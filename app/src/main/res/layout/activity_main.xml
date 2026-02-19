@@ -5,14 +5,13 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Contenedor de pantallas (cambia según el BottomNavigation) -->
+    <!-- Contenedor de pantallas (va hasta el final; el BottomNav se superpone) -->
     <FrameLayout
         android:id="@+id/contenedorPantallas"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:padding="12dp"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/bottomNav"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
@@ -23,12 +22,10 @@
             android:layout_height="match_parent"
             android:orientation="vertical">
 
-            <!-- Aquí metemos tu include_feed.xml -->
             <include
                 layout="@layout/include_feed"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" />
-
         </LinearLayout>
 
         <!-- PANTALLA MENSAJES -->
@@ -40,10 +37,10 @@
             android:visibility="gone">
 
             <TextView
+                style="@style/Text.Title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Mensajes (pendiente)"
-                style="@style/Text.Title"/>
+                android:text="Mensajes (pendiente)"/>
         </LinearLayout>
 
         <!-- PANTALLA PERFIL -->
@@ -55,15 +52,15 @@
             android:visibility="gone">
 
             <TextView
+                style="@style/Text.Title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Perfil (pendiente)"
-                style="@style/Text.Title"/>
+                android:text="Perfil (pendiente)"/>
         </LinearLayout>
 
     </FrameLayout>
 
-    <!-- Bottom Navigation -->
+    <!-- Bottom Navigation (encima del contenido) -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNav"
         android:layout_width="0dp"
