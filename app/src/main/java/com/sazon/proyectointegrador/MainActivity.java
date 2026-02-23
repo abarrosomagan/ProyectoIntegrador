@@ -149,7 +149,8 @@ public class MainActivity extends AppCompatActivity {
         } else if (itemId == R.id.nav_chats) {
             pantallaMensajes.setVisibility(View.VISIBLE);
         } else if (itemId == R.id.nav_profile) {
-            pantallaPerfil.setVisibility(View.VISIBLE);
+            // pantallaPerfil.setVisibility(View.VISIBLE);  // opcional
+            startActivity(new Intent(this, ProfileActivity.class));
         }
     }
 
