@@ -14,6 +14,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.sazon.proyectointegrador.adapters.ChatThreadAdapter;
+import com.sazon.proyectointegrador.model.ChatThread;
+
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.sazon.proyectointegrador.adapters.PublicacionAdapter;
 import com.sazon.proyectointegrador.model.Publicacion;
@@ -35,9 +38,14 @@ public class MainActivity extends AppCompatActivity {
     // (Incluido en include_feed)
     private ImageButton btnMenuFeed;
 
-    // (Preparado para Firebase)
+    private RecyclerView rvChats;
+    private ChatThreadAdapter chatsAdapter;
+    private final ArrayList<ChatThread> chatsData = new ArrayList<>();
+
+    // ===== Firebase (comentado) =====
     // private FirebaseAuth firebaseAuth;
     // private FirebaseFirestore firestore;
+    // private ListenerRegistration chatsListener;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -46,11 +54,11 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         bindViews();
-        // initFirebase(); // <- activar cuando metas dependencias + google-services.json
 
         setupBottomNav();
         setupFeed();
         setupFeedMenu();
+        setupChats();
     }
 
     private void bindViews() {
@@ -62,6 +70,7 @@ public class MainActivity extends AppCompatActivity {
         // IDs que vienen del include_feed (deben existir en include_feed.xml)
         rvFeed = findViewById(R.id.rvFeed);
         btnMenuFeed = findViewById(R.id.btnMenuFeed);
+        rvChats = findViewById(R.id.rvChats);
     }
 
     private void setupBottomNav() {
@@ -166,6 +175,30 @@ public class MainActivity extends AppCompatActivity {
         return lista;
     }
 
+    private void setupChats() {
+        if (rvChats == null) return;
+
+        rvChats.setLayoutManager(new LinearLayoutManager(this));
+
+        chatsData.clear();
+        chatsData.add(new ChatThread("1", "María", "¿Me pasas la receta?", "12:40", 2));
+        chatsData.add(new ChatThread("2", "Alex", "Buenísima 😄", "ayer", 0));
+        chatsData.add(new ChatThread("3", "Sofía", "¿Qué ingredientes usaste?", "lun", 1));
+
+        chatsAdapter = new ChatThreadAdapter(chatsData, chat -> {
+            Intent i = new Intent(MainActivity.this, ChatActivity.class);
+            i.putExtra(ChatActivity.EXTRA_CHAT_ID, chat.getId());
+            i.putExtra(ChatActivity.EXTRA_CHAT_NAME, chat.getName());
+            startActivity(i);
+        });
+
+        rvChats.setAdapter(chatsAdapter);
+
+        // ===== Firebase listo (comentado) =====
+        // initFirebase();
+        // setupChatsFirebase();
+    }
+
     // =========================
     // ========== Firebase ======
     // =========================
@@ -190,6 +223,57 @@ public class MainActivity extends AppCompatActivity {
         //         adapter.updateData(lista); // necesitarías método en el adapter
         //     })
         //     .addOnFailureListener(e -> Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show());
+    }
+    */
+
+    /*
+    private void setupChatsFirebase() {
+        FirebaseUser user = firebaseAuth.getCurrentUser();
+        if (user == null) return;
+
+        chatsListener = firestore.collection("chats")
+                .whereArrayContains("participants", user.getUid())
+                .orderBy("lastMessageAt", Query.Direction.DESCENDING)
+                .addSnapshotListener((snap, e) -> {
+                    if (e != null || snap == null) return;
+
+                    chatsData.clear();
+                    for (DocumentSnapshot doc : snap.getDocuments()) {
+                        String chatId = doc.getId();
+                        String lastMessage = doc.getString("lastMessage");
+
+                        String name = "Chat";
+                        Object mapObj = doc.get("participantsNames");
+                        if (mapObj instanceof Map) {
+                            Map<?, ?> names = (Map<?, ?>) mapObj;
+                            for (Map.Entry<?, ?> entry : names.entrySet()) {
+                                if (entry.getKey() != null && !entry.getKey().toString().equals(user.getUid())) {
+                                    name = String.valueOf(entry.getValue());
+                                    break;
+                                }
+                            }
+                        }
+
+                        chatsData.add(new ChatThread(
+                                chatId,
+                                name,
+                                lastMessage != null ? lastMessage : "",
+                                "",
+                                0
+                        ));
+                    }
+
+                    if (chatsAdapter != null) chatsAdapter.notifyDataSetChanged();
+                });
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (chatsListener != null) {
+            chatsListener.remove();
+            chatsListener = null;
+        }
     }
     */
 }
