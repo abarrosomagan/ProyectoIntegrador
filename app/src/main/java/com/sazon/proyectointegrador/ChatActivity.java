@@ -60,7 +60,7 @@ public class ChatActivity extends AppCompatActivity {
         TextView tvTitle = findViewById(R.id.tvChatTitle);
         tvTitle.setText(chatName);
 
-        ImageButton btnBack = findViewById(R.id.btnBack);
+        ImageButton btnBack = findViewById(R.id.btnBackProfile);
         btnBack.setOnClickListener(v -> finish());
 
         rvMessages = findViewById(R.id.rvMessages);

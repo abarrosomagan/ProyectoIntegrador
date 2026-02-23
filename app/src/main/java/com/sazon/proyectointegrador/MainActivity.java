@@ -14,6 +14,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.button.MaterialButton;
 import com.sazon.proyectointegrador.adapters.ChatThreadAdapter;
 import com.sazon.proyectointegrador.model.ChatThread;
 
@@ -71,6 +72,13 @@ public class MainActivity extends AppCompatActivity {
         rvFeed = findViewById(R.id.rvFeed);
         btnMenuFeed = findViewById(R.id.btnMenuFeed);
         rvChats = findViewById(R.id.rvChats);
+
+        com.google.android.material.button.MaterialButton btnOpenProfile = findViewById(R.id.btnOpenProfile);
+        if (btnOpenProfile != null) {
+            btnOpenProfile.setOnClickListener(v ->
+                    startActivity(new Intent(MainActivity.this, ProfileActivity.class))
+            );
+        }
     }
 
     private void setupBottomNav() {
@@ -149,8 +157,11 @@ public class MainActivity extends AppCompatActivity {
         } else if (itemId == R.id.nav_chats) {
             pantallaMensajes.setVisibility(View.VISIBLE);
         } else if (itemId == R.id.nav_profile) {
-            // pantallaPerfil.setVisibility(View.VISIBLE);  // opcional
-            startActivity(new Intent(this, ProfileActivity.class));
+            // 1) Dejamos marcada la pestaña Perfil (NO la cambiamos)
+            pantallaPerfil.setVisibility(View.VISIBLE);
+
+            // 2) Abrimos la Activity del perfil
+            startActivity(new Intent(MainActivity.this, ProfileActivity.class));
         }
     }
 

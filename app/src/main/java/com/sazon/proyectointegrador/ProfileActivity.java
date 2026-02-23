@@ -3,6 +3,7 @@ package com.sazon.proyectointegrador;
 import android.os.Bundle;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ImageButton;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.Nullable;
@@ -52,6 +53,9 @@ public class ProfileActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_profile);
+
+        ImageButton btnBack = findViewById(R.id.btnBackProfile);
+        btnBack.setOnClickListener(v -> finish());
 
         bindViews();
         setupRecycler();
