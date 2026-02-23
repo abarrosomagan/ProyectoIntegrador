@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "536944781172",
+    "project_id": "sazon-cc95a",
+    "storage_bucket": "sazon-cc95a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:536944781172:android:2a654f4f2697cedbf12e21",
+        "android_client_info": {
+          "package_name": "com.sazon.ProyectoIntegrador"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA3u4VL5F8ST4vyc0f3QoSDACnPBC-81XQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:536944781172:android:259762a9b9cc6b5df12e21",
+        "android_client_info": {
+          "package_name": "com.sazon.proyectointegrador"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA3u4VL5F8ST4vyc0f3QoSDACnPBC-81XQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
