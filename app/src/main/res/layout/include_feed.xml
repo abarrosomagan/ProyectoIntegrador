@@ -35,14 +35,6 @@
             android:layout_marginStart="12dp"
             android:layout_weight="1"
             android:text="Hola, JuanCarlos!" />
-
-        <ImageButton
-            android:id="@+id/btnMenuFeed"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:background="@android:color/transparent"
-            android:contentDescription="Menú"
-            android:src="@android:drawable/ic_menu_more" />
     </LinearLayout>
 
     <!-- CARD CONTENEDORA -->

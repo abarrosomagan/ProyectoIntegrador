@@ -18,23 +18,32 @@
             android:theme="@style/TemaSplash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
         <activity
-            android:name=".MainActivity"
-            android:exported="true" />
-        <activity
             android:name=".LoginActivity"
-            android:exported="true" />
+            android:exported="false" />
 
-        <activity android:name=".ChatActivity"
-            android:exported="true"/>
+        <activity
+            android:name=".RegisterActivity"
+            android:exported="false" />
 
-        <activity android:name=".ProfileActivity"
-            android:exported="true"/>
+        <activity
+            android:name=".MainActivity"
+            android:exported="false"
+            android:launchMode="singleTop" />
+
+        <activity
+            android:name=".ChatActivity"
+            android:exported="false" />
+
+        <!-- Perfil público desde el feed (si lo sigues usando) -->
+        <activity
+            android:name=".ProfileActivity"
+            android:exported="false" />
+
     </application>
 
 </manifest>

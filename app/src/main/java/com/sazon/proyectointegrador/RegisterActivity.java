@@ -13,6 +13,7 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
+import com.sazon.proyectointegrador.util.SimpleTextWatcher;
 
 public class RegisterActivity extends AppCompatActivity {
 

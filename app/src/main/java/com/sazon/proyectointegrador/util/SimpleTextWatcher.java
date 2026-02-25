@@ -1,4 +1,4 @@
-package com.sazon.proyectointegrador;
+package com.sazon.proyectointegrador.util;
 
 import android.text.Editable;
 import android.text.TextWatcher;

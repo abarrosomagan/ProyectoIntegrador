@@ -9,17 +9,18 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class SplashActivity extends AppCompatActivity {
 
-    private static final long DURACION_SPLASH_MS = 2000;
+    private static final long DURACION_SPLASH_MS = 1200;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
 
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            startActivity(new Intent(SplashActivity.this, LoginActivity.class));
+            Intent i = new Intent(SplashActivity.this, LoginActivity.class);
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(i);
             finish();
-        }, 2000);
+        }, DURACION_SPLASH_MS);
     }
 }

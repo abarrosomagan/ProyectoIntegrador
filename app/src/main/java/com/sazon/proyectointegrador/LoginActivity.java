@@ -13,6 +13,8 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
+import com.sazon.proyectointegrador.util.SessionManager;
+import com.sazon.proyectointegrador.util.SimpleTextWatcher;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -36,8 +38,6 @@ public class LoginActivity extends AppCompatActivity {
         setContentView(R.layout.activity_login);
 
         bindViews();
-        // initFirebase(); // <- activar cuando metas dependencias + google-services.json
-
         setupListeners();
     }
 
@@ -58,24 +58,21 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void setupListeners() {
-        btnLogin.setOnClickListener(v -> attemptLogin());
+        if (btnLogin != null) btnLogin.setOnClickListener(v -> attemptLogin());
 
-        tvRegister.setOnClickListener(v -> {
-            // Mantén tu navegación actual al register (si tu clase se llama distinto, cámbialo aquí)
-            startActivity(new Intent(this, RegisterActivity.class));
-        });
+        if (tvRegister != null) tvRegister.setOnClickListener(v ->
+                startActivity(new Intent(this, RegisterActivity.class))
+        );
 
-        tvForgot.setOnClickListener(v -> {
-            // Funcionalidad pendiente (más adelante Firebase reset)
-            showMessage("Recuperación de contraseña (pendiente)");
-        });
+        if (tvForgot != null) tvForgot.setOnClickListener(v ->
+                showMessage("Recuperación de contraseña (pendiente)")
+        );
 
-        btnGoogle.setOnClickListener(v -> {
-            // Funcionalidad pendiente (más adelante Google Sign-In + Firebase)
-            showMessage("Login con Google (pendiente)");
-        });
+        if (btnGoogle != null) btnGoogle.setOnClickListener(v ->
+                showMessage("Login con Google (pendiente)")
+        );
 
-        // Buena práctica: limpiar error al escribir
+        // UX: limpiar error al escribir
         addClearErrorOnType(etEmail, tilEmail);
         addClearErrorOnType(etPass, tilPass);
     }
@@ -100,36 +97,27 @@ public class LoginActivity extends AppCompatActivity {
 
         setLoading(true);
 
-        // ======= MODO ACTUAL (sin Firebase): NO cambia funcionalidad =======
-        // Si hoy tu login “entra” al pasar validación, lo mantenemos igual.
+        // ======= MODO ACTUAL (MOCK, sin Firebase) =======
         root.postDelayed(() -> {
             setLoading(false);
+
+            // Mock de sesión: SOLO aquí (no en onCreate)
+            SessionManager session = new SessionManager(this);
+            session.login("u_001", "Fernando");
+
             goToMain();
         }, 250);
-
-        // ======= FUTURO: Firebase Auth =======
-        /*
-        firebaseAuth.signInWithEmailAndPassword(email, pass)
-            .addOnSuccessListener(authResult -> {
-                setLoading(false);
-                goToMain();
-            })
-            .addOnFailureListener(e -> {
-                setLoading(false);
-                handleFirebaseLoginError(e);
-            });
-        */
     }
 
     private boolean validate(String email, String pass) {
         boolean ok = true;
 
-        if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+        if (tilEmail != null && (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches())) {
             tilEmail.setError("Email no válido");
             ok = false;
         }
 
-        if (pass.isEmpty()) {
+        if (tilPass != null && pass.isEmpty()) {
             tilPass.setError("Introduce la contraseña");
             ok = false;
         }
@@ -138,45 +126,36 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void clearErrors() {
-        tilEmail.setError(null);
-        tilPass.setError(null);
+        if (tilEmail != null) tilEmail.setError(null);
+        if (tilPass != null) tilPass.setError(null);
     }
 
     private void setLoading(boolean loading) {
-        btnLogin.setEnabled(!loading);
-        btnLogin.setText(loading ? "Entrando..." : "Entrar");
+        if (btnLogin != null) {
+            btnLogin.setEnabled(!loading);
+            btnLogin.setText(loading ? "Entrando..." : "Entrar");
+        }
 
-        etEmail.setEnabled(!loading);
-        etPass.setEnabled(!loading);
+        if (etEmail != null) etEmail.setEnabled(!loading);
+        if (etPass != null) etPass.setEnabled(!loading);
 
-        btnGoogle.setEnabled(!loading);
-        tvForgot.setEnabled(!loading);
-        tvRegister.setEnabled(!loading);
+        if (btnGoogle != null) btnGoogle.setEnabled(!loading);
+        if (tvForgot != null) tvForgot.setEnabled(!loading);
+        if (tvRegister != null) tvRegister.setEnabled(!loading);
     }
 
     private void goToMain() {
-        Intent intent = new Intent(this, MainActivity.class);
-        startActivity(intent);
+        Intent i = new Intent(LoginActivity.this, MainActivity.class);
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(i);
         finish();
     }
 
     private String getText(TextInputEditText et) {
-        return et != null && et.getText() != null ? et.getText().toString() : "";
+        return (et != null && et.getText() != null) ? et.getText().toString() : "";
     }
 
     private void showMessage(String msg) {
-        Snackbar.make(root, msg, Snackbar.LENGTH_SHORT).show();
+        if (root != null) Snackbar.make(root, msg, Snackbar.LENGTH_SHORT).show();
     }
-
-    // (Preparado para Firebase)
-    /*
-    private void initFirebase() {
-        firebaseAuth = FirebaseAuth.getInstance();
-    }
-
-    private void handleFirebaseLoginError(Exception e) {
-        // Aquí mapearemos errores típicos: credenciales inválidas, usuario no existe, etc.
-        showMessage("Error: " + e.getMessage());
-    }
-    */
 }

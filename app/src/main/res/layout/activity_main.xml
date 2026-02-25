@@ -56,42 +56,18 @@
                 android:layout_height="match_parent" />
         </LinearLayout>
 
-        <!-- PANTALLA PERFIL (placeholder dentro de Main) -->
+        <!-- PANTALLA PERFIL (REAL, integrado) -->
         <LinearLayout
             android:id="@+id/pantallaPerfil"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"
-            android:padding="16dp"
-            android:visibility="gone"
-            android:baselineAligned="false">
+            android:visibility="gone">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Perfil"
-                android:textColor="@color/texto_principal"
-                android:textSize="18sp"
-                android:textStyle="bold"/>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="Sección de perfil (pendiente)"
-                android:textColor="@color/texto_secundario"
-                android:textSize="13sp"/>
-
-            <!-- Opcional: abrir ProfileActivity -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnOpenProfile"
+            <include
+                layout="@layout/activity_profile"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="Abrir perfil"
-                android:textColor="@color/texto_sobre_principal"
-                app:backgroundTint="@color/color_principal_variante"
-                app:cornerRadius="12dp" />
+                android:layout_height="match_parent" />
 
         </LinearLayout>
 
