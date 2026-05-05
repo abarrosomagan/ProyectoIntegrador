@@ -19,6 +19,15 @@
         android:paddingTop="6dp"
         android:paddingBottom="10dp">
 
+        <ImageButton
+            android:id="@+id/btnMenuFeed"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Menú"
+            android:src="@android:drawable/ic_menu_more"
+            app:tint="@color/texto_principal" />
+
         <ImageView
             android:id="@+id/imgAvatarFeed"
             android:layout_width="44dp"
