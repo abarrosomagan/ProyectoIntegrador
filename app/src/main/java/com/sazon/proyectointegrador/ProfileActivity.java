@@ -14,6 +14,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.sazon.proyectointegrador.adapters.PublicacionAdapter;
 import com.sazon.proyectointegrador.model.Publicacion;
 import com.sazon.proyectointegrador.util.SessionManager;
@@ -44,6 +46,8 @@ public class ProfileActivity extends AppCompatActivity {
     private TextView tvEmptyTitle, tvEmptySubtitle;
     private MaterialButton btnEmptyAction;
 
+    private FirebaseAuth firebaseAuth;
+
     private final ArrayList<Publicacion> myRecipes = new ArrayList<>();
     private final ArrayList<Publicacion> savedRecipes = new ArrayList<>();
 
@@ -52,7 +56,7 @@ public class ProfileActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_profile);
-
+        firebaseAuth = FirebaseAuth.getInstance();
         bindViews();
 
         ImageButton btnBack = findViewById(R.id.btnBackProfile);
@@ -63,6 +67,8 @@ public class ProfileActivity extends AppCompatActivity {
         loadMockData();
         showMyRecipes();
         setupListeners();
+        applyIntentProfileMode();
+        renderHeaderFromFirebaseIfOwnProfile();
     }
 
     private void bindViews() {
@@ -283,6 +289,7 @@ public class ProfileActivity extends AppCompatActivity {
                 return true;
             } else if (id == 3) {
                 // Logout real + volver a Login
+                if (firebaseAuth != null) firebaseAuth.signOut();
                 new SessionManager(this).logout();
                 goToLoginAndClearBackstack();
                 return true;
@@ -334,5 +341,26 @@ public class ProfileActivity extends AppCompatActivity {
                     Toast.makeText(this, "Perfil actualizado (mock)", Toast.LENGTH_SHORT).show();
                 })
                 .show();
+    }
+
+    private void renderHeaderFromFirebaseIfOwnProfile() {
+        boolean isOwnProfile = getIntent().getBooleanExtra(EXTRA_IS_OWN_PROFILE, true);
+        if (!isOwnProfile) return;
+
+        if (firebaseAuth == null) firebaseAuth = FirebaseAuth.getInstance();
+        FirebaseUser user = firebaseAuth.getCurrentUser();
+        if (user == null) return;
+
+        String name = user.getDisplayName();
+        if (name == null || name.trim().isEmpty()) {
+            // fallback a email si no hay displayName
+            String email = user.getEmail();
+            name = (email != null && email.contains("@")) ? email.substring(0, email.indexOf("@")) : "Usuario";
+        }
+
+        tvUsername.setText(name);
+        tvAvatar.setText(("" + name.charAt(0)).toUpperCase());
+
+        // Bio: de momento se queda como esté (mock o intent) hasta que metáis Firestore
     }
 }
