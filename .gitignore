@@ -15,3 +15,9 @@
 local.properties
 .idea/
 *.iml
+
+# Notas personales de desarrollo
+dev_notes.md
+
+# Worktrees y trastos auxiliares
+.claude/

@@ -7,31 +7,25 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:536944781172:android:2a654f4f2697cedbf12e21",
-        "android_client_info": {
-          "package_name": "com.sazon.ProyectoIntegrador"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyA3u4VL5F8ST4vyc0f3QoSDACnPBC-81XQ"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
         "mobilesdk_app_id": "1:536944781172:android:259762a9b9cc6b5df12e21",
         "android_client_info": {
           "package_name": "com.sazon.proyectointegrador"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "536944781172-2jkq5j88hfm14j58ih72b96vkvv9a5bi.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.sazon.proyectointegrador",
+            "certificate_hash": "7ef171d5e47f0844388b5beb46e23eb8a84927b1"
+          }
+        },
+        {
+          "client_id": "536944781172-mpkj5bu76q86i6al7kf09u2jkc5ejed4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyA3u4VL5F8ST4vyc0f3QoSDACnPBC-81XQ"
@@ -39,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "536944781172-mpkj5bu76q86i6al7kf09u2jkc5ejed4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
