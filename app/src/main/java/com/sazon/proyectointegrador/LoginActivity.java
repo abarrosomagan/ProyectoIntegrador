@@ -2,40 +2,45 @@ package com.sazon.proyectointegrador;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.InputType;
 import android.util.Patterns;
 import android.view.View;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
+import com.google.firebase.auth.FirebaseAuthInvalidUserException;
+import com.google.firebase.auth.FirebaseUser;
 import com.sazon.proyectointegrador.util.SessionManager;
 import com.sazon.proyectointegrador.util.SimpleTextWatcher;
 
 public class LoginActivity extends AppCompatActivity {
 
-    // Root (para Snackbar)
     private View root;
 
-    // Inputs
     private TextInputLayout tilEmail, tilPass;
     private TextInputEditText etEmail, etPass;
 
-    // Actions
     private MaterialButton btnLogin, btnGoogle;
     private TextView tvForgot, tvRegister;
 
-    // (Preparado para Firebase - aún no lo usamos)
-    // private FirebaseAuth firebaseAuth;
+    private FirebaseAuth firebaseAuth;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+
+        firebaseAuth = FirebaseAuth.getInstance();
 
         bindViews();
         setupListeners();
@@ -43,6 +48,7 @@ public class LoginActivity extends AppCompatActivity {
 
     private void bindViews() {
         root = findViewById(R.id.activity_login);
+        if (root == null) root = getWindow().getDecorView();
 
         tilEmail = findViewById(R.id.uso_input_correo);
         tilPass  = findViewById(R.id.uso_input_contrasena);
@@ -64,15 +70,12 @@ public class LoginActivity extends AppCompatActivity {
                 startActivity(new Intent(this, RegisterActivity.class))
         );
 
-        if (tvForgot != null) tvForgot.setOnClickListener(v ->
-                showMessage("Recuperación de contraseña (pendiente)")
-        );
+        if (tvForgot != null) tvForgot.setOnClickListener(v -> showForgotPasswordDialog());
 
         if (btnGoogle != null) btnGoogle.setOnClickListener(v ->
                 showMessage("Login con Google (pendiente)")
         );
 
-        // UX: limpiar error al escribir
         addClearErrorOnType(etEmail, tilEmail);
         addClearErrorOnType(etPass, tilPass);
     }
@@ -97,16 +100,31 @@ public class LoginActivity extends AppCompatActivity {
 
         setLoading(true);
 
-        // ======= MODO ACTUAL (MOCK, sin Firebase) =======
-        root.postDelayed(() -> {
-            setLoading(false);
+        firebaseAuth.signInWithEmailAndPassword(email, pass)
+                .addOnCompleteListener(this, task -> {
+                    setLoading(false);
 
-            // Mock de sesión: SOLO aquí (no en onCreate)
-            SessionManager session = new SessionManager(this);
-            session.login("u_001", "Fernando");
+                    if (!task.isSuccessful()) {
+                        handleLoginError(task.getException());
+                        return;
+                    }
 
-            goToMain();
-        }, 250);
+                    FirebaseUser user = firebaseAuth.getCurrentUser();
+                    if (user == null) {
+                        showMessage("Login OK, pero user es null.");
+                        return;
+                    }
+
+                    String name = (user.getDisplayName() != null && !user.getDisplayName().trim().isEmpty())
+                            ? user.getDisplayName().trim()
+                            : (user.getEmail() != null && user.getEmail().contains("@")
+                            ? user.getEmail().substring(0, user.getEmail().indexOf("@"))
+                            : "Usuario");
+
+                    new SessionManager(this).login(user.getUid(), name);
+
+                    goToMain();
+                });
     }
 
     private boolean validate(String email, String pass) {
@@ -149,6 +167,63 @@ public class LoginActivity extends AppCompatActivity {
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(i);
         finish();
+    }
+
+    private void handleLoginError(Exception e) {
+        // Mapeo legible en castellano. Tipos > parseo de texto.
+        if (e instanceof FirebaseAuthInvalidUserException) {
+            if (tilEmail != null) tilEmail.setError("No existe una cuenta con ese correo");
+            return;
+        }
+        if (e instanceof FirebaseAuthInvalidCredentialsException) {
+            if (tilPass != null) tilPass.setError("Contraseña incorrecta");
+            return;
+        }
+        String msg = e != null && e.getMessage() != null ? e.getMessage().toLowerCase() : "";
+        if (msg.contains("network")) {
+            showMessage("Sin conexión. Inténtalo de nuevo.");
+            return;
+        }
+        showMessage("No se pudo entrar. Inténtalo de nuevo.");
+    }
+
+    // ===== Recuperar contraseña =====
+
+    private void showForgotPasswordDialog() {
+        final TextInputEditText input = new TextInputEditText(this);
+        input.setHint("Tu correo electrónico");
+        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
+
+        // Prerellenamos con lo que ya esté escrito en el login
+        String prefill = getText(etEmail).trim();
+        if (!prefill.isEmpty()) input.setText(prefill);
+
+        int pad = (int) (16 * getResources().getDisplayMetrics().density);
+        LinearLayout container = new LinearLayout(this);
+        container.setOrientation(LinearLayout.VERTICAL);
+        container.setPadding(pad * 2, pad, pad * 2, 0);
+        container.addView(input);
+
+        new AlertDialog.Builder(this)
+                .setTitle("Recuperar contraseña")
+                .setMessage("Te enviaremos un enlace para crear una nueva contraseña.")
+                .setView(container)
+                .setPositiveButton("Enviar", (d, w) -> sendResetEmail(
+                        input.getText() != null ? input.getText().toString().trim() : ""))
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
+    private void sendResetEmail(String email) {
+        if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            showMessage("Email no válido");
+            return;
+        }
+        firebaseAuth.sendPasswordResetEmail(email)
+                .addOnSuccessListener(unused ->
+                        showMessage("Te hemos enviado un correo a " + email))
+                .addOnFailureListener(e ->
+                        showMessage("No se pudo enviar el correo de recuperación"));
     }
 
     private String getText(TextInputEditText et) {
