@@ -13,6 +13,12 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthUserCollisionException;
+import com.google.firebase.auth.FirebaseAuthWeakPasswordException;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.UserProfileChangeRequest;
+import com.sazon.proyectointegrador.util.SessionManager;
 import com.sazon.proyectointegrador.util.SimpleTextWatcher;
 
 public class RegisterActivity extends AppCompatActivity {
@@ -24,18 +30,17 @@ public class RegisterActivity extends AppCompatActivity {
     private MaterialButton btnRegister;
     private TextView tvGoLogin;
 
-    // (Preparado para Firebase - aún no lo usamos)
-    // private FirebaseAuth firebaseAuth;
-    // private FirebaseFirestore firestore;
+    // Firebase
+    private FirebaseAuth firebaseAuth;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
 
-        bindViews();
-        // initFirebase(); // <- lo activaremos cuando metas dependencias y google-services
+        firebaseAuth = FirebaseAuth.getInstance();
 
+        bindViews();
         setupListeners();
     }
 
@@ -57,11 +62,10 @@ public class RegisterActivity extends AppCompatActivity {
     }
 
     private void setupListeners() {
-        btnRegister.setOnClickListener(v -> attemptRegister());
+        if (btnRegister != null) btnRegister.setOnClickListener(v -> attemptRegister());
+        if (tvGoLogin != null) tvGoLogin.setOnClickListener(v -> goToLogin());
 
-        tvGoLogin.setOnClickListener(v -> goToLogin());
-
-        // UX: al escribir, limpiamos errores (buena práctica)
+        // UX: al escribir, limpiamos errores
         addClearErrorOnType(etName, tilName);
         addClearErrorOnType(etEmail, tilEmail);
         addClearErrorOnType(etPass, tilPass);
@@ -90,71 +94,70 @@ public class RegisterActivity extends AppCompatActivity {
 
         setLoading(true);
 
-        // ======= MODO ACTUAL (sin Firebase): simulación =======
-        // Aquí luego llamaremos a Firebase. De momento simulamos OK.
-        root.postDelayed(() -> {
-            setLoading(false);
-            showMessage("Cuenta creada (simulación).");
-            // Decide tu flujo:
-            // 1) Volver a Login:
-            goToLogin();
-
-            // 2) O entrar directo a Main:
-            // startActivity(new Intent(this, MainActivity.class));
-            // finish();
-        }, 700);
-
-        // ======= FUTURO: Firebase (lo dejamos preparado) =======
-        /*
+        // ======= FIREBASE AUTH (Email/Password) =======
         firebaseAuth.createUserWithEmailAndPassword(email, pass1)
-            .addOnSuccessListener(authResult -> {
-                String uid = authResult.getUser().getUid();
-
-                // Crear documento usuario en Firestore
-                Map<String, Object> user = new HashMap<>();
-                user.put("uid", uid);
-                user.put("name", name);
-                user.put("email", email);
-                user.put("createdAt", FieldValue.serverTimestamp());
-
-                firestore.collection("users").document(uid).set(user)
-                    .addOnSuccessListener(unused -> {
+                .addOnCompleteListener(this, task -> {
+                    if (!task.isSuccessful()) {
                         setLoading(false);
-                        showMessage("Cuenta creada correctamente");
+                        showMessage(parseAuthError(task.getException()));
+                        return;
+                    }
+
+                    // Usuario creado OK -> actualizamos displayName
+                    FirebaseUser user = firebaseAuth.getCurrentUser();
+                    if (user == null) {
+                        setLoading(false);
+                        showMessage("Cuenta creada, pero no se pudo obtener el usuario.");
                         goToLogin();
-                    })
-                    .addOnFailureListener(e -> {
-                        setLoading(false);
-                        showMessage("Error guardando perfil: " + e.getMessage());
-                    });
-            })
-            .addOnFailureListener(e -> {
-                setLoading(false);
-                handleFirebaseRegisterError(e);
-            });
-        */
+                        return;
+                    }
+
+                    UserProfileChangeRequest profileUpdates =
+                            new UserProfileChangeRequest.Builder()
+                                    .setDisplayName(name)
+                                    .build();
+
+                    user.updateProfile(profileUpdates)
+                            .addOnCompleteListener(this, task2 -> {
+                                // Cacheamos en SharedPreferences para que el saludo del feed lo coja al vuelo
+                                new SessionManager(RegisterActivity.this).login(user.getUid(), name);
+
+                                // Creamos el doc de Firestore. Si falla, igual entramos al main:
+                                // la cuenta ya existe en Auth y se puede recuperar luego.
+                                SessionManager.createUserDoc(
+                                        user.getUid(), name, email,
+                                        unused -> {
+                                            setLoading(false);
+                                            goToMain();
+                                        },
+                                        e -> {
+                                            setLoading(false);
+                                            showMessage("Cuenta creada (perfil pendiente de guardar)");
+                                            goToMain();
+                                        });
+                            });
+                });
     }
 
     private boolean validate(String name, String email, String pass1, String pass2) {
         boolean ok = true;
 
-        if (name.isEmpty()) {
+        if (tilName != null && name.isEmpty()) {
             tilName.setError("Introduce tu nombre");
             ok = false;
         }
 
-        if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+        if (tilEmail != null && (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches())) {
             tilEmail.setError("Email no válido");
             ok = false;
         }
 
-        // Reglas típicas (ajústalas si el profe pide otra cosa)
-        if (pass1.length() < 6) {
+        if (tilPass != null && pass1.length() < 6) {
             tilPass.setError("La contraseña debe tener al menos 6 caracteres");
             ok = false;
         }
 
-        if (!pass1.equals(pass2)) {
+        if (tilPass2 != null && !pass1.equals(pass2)) {
             tilPass2.setError("Las contraseñas no coinciden");
             ok = false;
         }
@@ -163,27 +166,27 @@ public class RegisterActivity extends AppCompatActivity {
     }
 
     private void clearAllErrors() {
-        tilName.setError(null);
-        tilEmail.setError(null);
-        tilPass.setError(null);
-        tilPass2.setError(null);
+        if (tilName != null) tilName.setError(null);
+        if (tilEmail != null) tilEmail.setError(null);
+        if (tilPass != null) tilPass.setError(null);
+        if (tilPass2 != null) tilPass2.setError(null);
     }
 
     private void setLoading(boolean loading) {
-        btnRegister.setEnabled(!loading);
-        btnRegister.setText(loading ? "Creando..." : "Registrarse");
+        if (btnRegister != null) {
+            btnRegister.setEnabled(!loading);
+            btnRegister.setText(loading ? "Creando..." : "Registrarse");
+        }
 
-        // Opcional: desactivar inputs para evitar doble envío
-        etName.setEnabled(!loading);
-        etEmail.setEnabled(!loading);
-        etPass.setEnabled(!loading);
-        etPass2.setEnabled(!loading);
-        tvGoLogin.setEnabled(!loading);
+        if (etName != null) etName.setEnabled(!loading);
+        if (etEmail != null) etEmail.setEnabled(!loading);
+        if (etPass != null) etPass.setEnabled(!loading);
+        if (etPass2 != null) etPass2.setEnabled(!loading);
+        if (tvGoLogin != null) tvGoLogin.setEnabled(!loading);
     }
 
     private void goToLogin() {
-        // Si Register se abre desde Login, normalmente con finish() vale.
-        // Si no, usa Intent explícito:
+        // Si Register se abre desde Login, con finish() vale
         try {
             finish();
         } catch (Exception ignored) {
@@ -192,27 +195,40 @@ public class RegisterActivity extends AppCompatActivity {
         }
     }
 
+    private void goToMain() {
+        Intent i = new Intent(RegisterActivity.this, MainActivity.class);
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(i);
+        finish();
+    }
+
     private String getText(TextInputEditText et) {
         return et != null && et.getText() != null ? et.getText().toString() : "";
     }
 
     private void showMessage(String msg) {
-        Snackbar.make(root, msg, Snackbar.LENGTH_SHORT).show();
+        if (root != null) Snackbar.make(root, msg, Snackbar.LENGTH_SHORT).show();
     }
 
-    // (Preparado para Firebase)
-    /*
-    private void initFirebase() {
-        firebaseAuth = FirebaseAuth.getInstance();
-        firestore = FirebaseFirestore.getInstance();
-    }
+    private String parseAuthError(Exception e) {
+        if (e == null) return "Error al registrar";
 
-    private void handleFirebaseRegisterError(Exception e) {
-        // Aquí podrías mapear errores típicos:
-        // - email en uso
-        // - contraseña débil
-        // - formato email
-        showMessage("Error: " + e.getMessage());
+        // Primero los tipos conocidos de Firebase Auth (más fiable que parsear texto)
+        if (e instanceof FirebaseAuthUserCollisionException) {
+            return "Ese email ya está registrado.";
+        }
+        if (e instanceof FirebaseAuthWeakPasswordException) {
+            return "Contraseña demasiado débil (mínimo 6 caracteres).";
+        }
+
+        // Como fallback, miramos el texto del mensaje
+        String msg = e.getMessage();
+        if (msg == null) return "Error al registrar";
+        String lower = msg.toLowerCase();
+
+        if (lower.contains("badly formatted")) return "Email mal formado.";
+        if (lower.contains("network")) return "Sin conexión. Inténtalo de nuevo.";
+
+        return "No se pudo completar el registro";
     }
-    */
 }
