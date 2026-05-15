@@ -48,6 +48,13 @@ public class MainActivity extends AppCompatActivity {
         setupBottomNav();
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (feedController != null) feedController.onDestroy();
+        if (chatsController != null) chatsController.onDestroy();
+    }
+
     private void setupBottomNav() {
         BottomNavigationView bottomNav = findViewById(R.id.bottomNav);
         bottomNav.setSelectedItemId(R.id.nav_feed);

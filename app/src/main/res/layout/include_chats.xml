@@ -1,25 +1,82 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/chats_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="20dp"
+    android:paddingBottom="0dp"
     android:baselineAligned="false">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <!-- Cabecera: título + botón "Nueva conversación" -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Mensajes"
-        android:textColor="@color/texto_principal"
-        android:textSize="18sp"
-        android:textStyle="bold" />
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingBottom="4dp">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvChats"
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Mensajes"
+            android:textColor="@color/texto_principal"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            app:cardBackgroundColor="@color/color_principal_variante"
+            app:cardCornerRadius="21dp"
+            app:cardElevation="0dp">
+
+            <ImageButton
+                android:id="@+id/btnNuevaConversacion"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Nueva conversación"
+                android:padding="10dp"
+                android:src="@android:drawable/ic_input_add"
+                app:tint="@color/texto_sobre_principal" />
+        </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
+
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="12dp"
-        android:layout_weight="1" />
+        android:layout_marginTop="16dp"
+        android:layout_weight="1">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvChats"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingBottom="16dp" />
+
+        <TextView
+            android:id="@+id/tvChatsVacio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:drawableTop="@drawable/ic_chat_empty"
+            android:drawablePadding="16dp"
+            android:gravity="center"
+            android:paddingStart="32dp"
+            android:paddingEnd="32dp"
+            android:paddingTop="24dp"
+            android:paddingBottom="24dp"
+            android:text="Aún no tienes conversaciones.\nPulsa el + para empezar una."
+            android:textColor="@color/texto_secundario"
+            android:textSize="14.5sp"
+            android:lineSpacingExtra="2dp"
+            android:visibility="gone" />
+    </FrameLayout>
 
 </LinearLayout>
