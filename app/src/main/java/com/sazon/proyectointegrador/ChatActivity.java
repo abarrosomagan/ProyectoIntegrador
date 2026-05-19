@@ -25,6 +25,7 @@ import com.sazon.proyectointegrador.adapters.ChatMessageAdapter;
 import com.sazon.proyectointegrador.model.ChatDateHeader;
 import com.sazon.proyectointegrador.model.ChatItem;
 import com.sazon.proyectointegrador.model.ChatMessage;
+import com.sazon.proyectointegrador.util.DemoData;
 import com.sazon.proyectointegrador.util.SessionManager;
 
 import java.text.SimpleDateFormat;
@@ -101,7 +102,18 @@ public class ChatActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        listenMessages();
+        if (DemoData.isDemoChatId(chatId)) {
+            cargarMensajesDemo();
+        } else {
+            listenMessages();
+        }
+    }
+
+    private void cargarMensajesDemo() {
+        items.clear();
+        items.addAll(DemoData.messages(chatId));
+        adapter.notifyDataSetChanged();
+        scrollToBottom();
     }
 
     @Override
@@ -159,6 +171,15 @@ public class ChatActivity extends AppCompatActivity {
     private void sendMessage() {
         String text = etMessage.getText() != null ? etMessage.getText().toString().trim() : "";
         if (text.isEmpty()) return;
+
+        // En los chats demo no tocamos Firestore: añadimos el mensaje al vuelo
+        if (DemoData.isDemoChatId(chatId)) {
+            etMessage.setText("");
+            items.add(new ChatMessage(text, true, System.currentTimeMillis()));
+            adapter.notifyDataSetChanged();
+            scrollToBottom();
+            return;
+        }
 
         FirebaseUser user = SessionManager.currentUser();
         if (user == null) {

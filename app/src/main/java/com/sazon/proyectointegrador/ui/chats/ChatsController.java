@@ -23,6 +23,7 @@ import com.sazon.proyectointegrador.ChatActivity;
 import com.sazon.proyectointegrador.R;
 import com.sazon.proyectointegrador.adapters.ChatThreadAdapter;
 import com.sazon.proyectointegrador.model.ChatThread;
+import com.sazon.proyectointegrador.util.DemoData;
 import com.sazon.proyectointegrador.util.SessionManager;
 
 import java.text.SimpleDateFormat;
@@ -98,7 +99,15 @@ public class ChatsController {
 
     private void suscribirChats() {
         String uid = SessionManager.currentUid();
-        if (uid == null) return;
+        if (uid == null) {
+            if (DemoData.ENABLED) {
+                chatsData.clear();
+                chatsData.addAll(DemoData.chats());
+                if (chatsAdapter != null) chatsAdapter.notifyDataSetChanged();
+                actualizarEstadoVacio();
+            }
+            return;
+        }
 
         // No ordeno en la query (no quiero forzar a Fernando a crear un índice compuesto en Firestore).
         // Lo ordenamos en cliente con un map paralelo de timestamps.
@@ -154,6 +163,8 @@ public class ChatsController {
                     });
 
                     chatsData.clear();
+                    // Chats demo arriba para que la lista no se vea vacía
+                    if (DemoData.ENABLED) chatsData.addAll(DemoData.chats());
                     for (Object[] fila : filas) chatsData.add((ChatThread) fila[0]);
 
                     if (chatsAdapter != null) chatsAdapter.notifyDataSetChanged();

@@ -296,25 +296,19 @@ public class ProfileController {
     // ===== Datos mock (recetas/guardadas — pendiente Firestore) =====
 
     private void loadMock() {
-        long ahora = System.currentTimeMillis();
-
         my.clear();
-        my.add(new Publicacion("p1","user_me","Fernando",
-                ahora-(2*60*60*1000L),
-                "Tortilla de patatas","Receta clásica y jugosa.","",120,false));
-
-        my.add(new Publicacion("p2","user_me","Fernando",
-                ahora-(24*60*60*1000L),
-                "Pollo al curry suave","Curry suave para todos.","",85,false));
-
         saved.clear();
-        saved.add(new Publicacion("s1","user_maria","María",
-                ahora-(2*60*60*1000L),
-                "Pasta cremosa con setas","Perfecta para cenas rápidas.","",89,true));
+
+        if (com.sazon.proyectointegrador.util.DemoData.ENABLED) {
+            my.addAll(com.sazon.proyectointegrador.util.DemoData.recetasPropias());
+            saved.addAll(com.sazon.proyectointegrador.util.DemoData.recetasGuardadas());
+        }
 
         if (tvStatRecipes != null) tvStatRecipes.setText(String.valueOf(my.size()));
-        if (tvStatFollowers != null) tvStatFollowers.setText("12");
-        if (tvStatFollowing != null) tvStatFollowing.setText("8");
+        if (tvStatFollowers != null) tvStatFollowers.setText(
+                String.valueOf(com.sazon.proyectointegrador.util.DemoData.demoFollowers()));
+        if (tvStatFollowing != null) tvStatFollowing.setText(
+                String.valueOf(com.sazon.proyectointegrador.util.DemoData.demoFollowing()));
     }
 
     private void showMy() {
