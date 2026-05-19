@@ -25,4 +25,12 @@
     <style name="TemaSplash" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="android:windowBackground">@color/color_principal</item>
     </style>
+
+    <!-- Pildora detrás del icono seleccionado del BottomNav -->
+    <style name="App.BottomNavIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
+        <item name="android:color">@color/color_principal_variante</item>
+        <item name="android:width">64dp</item>
+        <item name="android:height">32dp</item>
+        <item name="marginHorizontal">4dp</item>
+    </style>
 </resources>

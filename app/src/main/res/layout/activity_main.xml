@@ -12,12 +12,20 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:background="@color/fondo_superficie"
-        app:itemIconTint="@color/icono_activo"
-        app:itemTextColor="@color/icono_activo"
+        android:elevation="12dp"
+        android:minHeight="80dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp"
+        app:itemActiveIndicatorStyle="@style/App.BottomNavIndicator"
+        app:itemIconSize="22dp"
+        app:itemIconTint="@color/nav_item_color"
+        app:itemRippleColor="@color/color_principal_variante"
+        app:itemTextColor="@color/nav_item_color"
+        app:labelVisibilityMode="labeled"
         app:menu="@menu/menu_bottom_nav"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <!-- Contenedor de pantallas: hasta arriba del BottomNav -->
     <FrameLayout
