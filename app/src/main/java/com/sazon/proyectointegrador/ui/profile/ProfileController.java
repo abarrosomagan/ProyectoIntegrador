@@ -11,7 +11,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
-import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.appbar.AppBarLayout;
@@ -22,7 +22,7 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.UserProfileChangeRequest;
 import com.sazon.proyectointegrador.LoginActivity;
 import com.sazon.proyectointegrador.R;
-import com.sazon.proyectointegrador.adapters.PublicacionAdapter;
+import com.sazon.proyectointegrador.adapters.PublicacionGridAdapter;
 import com.sazon.proyectointegrador.model.Publicacion;
 import com.sazon.proyectointegrador.util.SessionManager;
 
@@ -35,14 +35,14 @@ public class ProfileController {
 
     private final AppCompatActivity a;
 
-    private TextView tvAvatar, tvUsername, tvBio;
+    private TextView tvAvatar, tvUsername, tvUserHandle, tvBio, tvChefRank;
     private TextView tvStatRecipes, tvStatFollowers, tvStatFollowing;
 
-    private MaterialButton btnEdit, btnTabMy, btnTabSaved;
+    private MaterialButton btnEdit, btnShare, btnTabMy, btnTabSaved;
     private ImageButton btnMore;
 
     private RecyclerView rv;
-    private PublicacionAdapter adapter;
+    private PublicacionGridAdapter adapter;
 
     private View emptyState;
     private TextView tvEmptyTitle, tvEmptySubtitle;
@@ -78,13 +78,16 @@ public class ProfileController {
     private void bind() {
         tvAvatar = a.findViewById(R.id.tvAvatar);
         tvUsername = a.findViewById(R.id.tvUsername);
+        tvUserHandle = a.findViewById(R.id.tvUserHandle);
         tvBio = a.findViewById(R.id.tvBio);
+        tvChefRank = a.findViewById(R.id.tvChefRank);
 
         tvStatRecipes = a.findViewById(R.id.tvStatRecipes);
         tvStatFollowers = a.findViewById(R.id.tvStatFollowers);
         tvStatFollowing = a.findViewById(R.id.tvStatFollowing);
 
         btnEdit = a.findViewById(R.id.btnEditProfile);
+        btnShare = a.findViewById(R.id.btnShareProfile);
         btnTabMy = a.findViewById(R.id.btnTabMyRecipes);
         btnTabSaved = a.findViewById(R.id.btnTabSaved);
 
@@ -99,12 +102,11 @@ public class ProfileController {
 
     private void setupRecycler() {
         if (rv == null) return;
-        rv.setLayoutManager(new LinearLayoutManager(a));
+        rv.setLayoutManager(new GridLayoutManager(a, 3));
 
-        adapter = new PublicacionAdapter(
+        adapter = new PublicacionGridAdapter(
                 new ArrayList<>(),
-                p -> Toast.makeText(a, "Detalle pendiente: " + p.getTitulo(), Toast.LENGTH_SHORT).show(),
-                p -> Toast.makeText(a, "Autor: " + p.getAutor(), Toast.LENGTH_SHORT).show()
+                p -> Toast.makeText(a, "Detalle pendiente: " + p.getTitulo(), Toast.LENGTH_SHORT).show()
         );
         rv.setAdapter(adapter);
     }
@@ -141,6 +143,9 @@ public class ProfileController {
         if (btnTabSaved != null) btnTabSaved.setOnClickListener(v -> { paintTabs(false); showSaved(); });
 
         if (btnEdit != null) btnEdit.setOnClickListener(v -> mostrarDialogoEditarPerfil());
+
+        if (btnShare != null) btnShare.setOnClickListener(v ->
+                Toast.makeText(a, "Compartir perfil (pendiente)", Toast.LENGTH_SHORT).show());
 
         if (btnMore != null) btnMore.setOnClickListener(this::showMoreMenu);
 
@@ -206,6 +211,27 @@ public class ProfileController {
         if (tvAvatar != null && !name.isEmpty()) {
             tvAvatar.setText(String.valueOf(Character.toUpperCase(name.charAt(0))));
         }
+        if (tvUserHandle != null) tvUserHandle.setText("@" + buildHandle(name));
+        if (tvChefRank != null) tvChefRank.setText(chefRankFor(my.size()));
+    }
+
+    /** Genera un handle simple a partir del nombre o del email. */
+    private String buildHandle(String name) {
+        String email = SessionManager.currentEmail();
+        if (email != null && email.contains("@")) {
+            return email.substring(0, email.indexOf("@")).toLowerCase();
+        }
+        if (name == null || name.isEmpty()) return "chef";
+        return name.toLowerCase().replaceAll("\\s+", "");
+    }
+
+    /** Rango de chef en función del número de recetas publicadas. */
+    private static String chefRankFor(int recetas) {
+        if (recetas <= 0)  return "🥄 Aprendiz de cocina";
+        if (recetas < 4)   return "🍳 Cocinero novato";
+        if (recetas < 11)  return "🍲 Cocinero";
+        if (recetas < 26)  return "👨‍🍳 Chef de cocina";
+        return "⭐ Chef estrella";
     }
 
     // ===== Editar perfil real =====
