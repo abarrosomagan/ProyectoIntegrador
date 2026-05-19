@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
@@ -21,11 +22,17 @@ import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.SetOptions;
 import com.sazon.proyectointegrador.adapters.ChatMessageAdapter;
+import com.sazon.proyectointegrador.model.ChatDateHeader;
+import com.sazon.proyectointegrador.model.ChatItem;
 import com.sazon.proyectointegrador.model.ChatMessage;
 import com.sazon.proyectointegrador.util.SessionManager;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 public class ChatActivity extends AppCompatActivity {
@@ -35,14 +42,16 @@ public class ChatActivity extends AppCompatActivity {
 
     private RecyclerView rvMessages;
     private ChatMessageAdapter adapter;
-    private final ArrayList<ChatMessage> messages = new ArrayList<>();
+    private final ArrayList<ChatItem> items = new ArrayList<>();
 
     private TextInputEditText etMessage;
     private MaterialButton btnSend;
+    private TextView tvChatAvatar;
+    private TextView tvChatSubtitle;
 
     private String chatId;
+    private String chatName;
 
-    // Listener de mensajes en tiempo real — se libera en onStop
     private ListenerRegistration messagesListener;
 
     @Override
@@ -52,7 +61,7 @@ public class ChatActivity extends AppCompatActivity {
         setContentView(R.layout.activity_chat);
 
         chatId = getIntent().getStringExtra(EXTRA_CHAT_ID);
-        String chatName = getIntent().getStringExtra(EXTRA_CHAT_NAME);
+        chatName = getIntent().getStringExtra(EXTRA_CHAT_NAME);
         if (chatName == null) chatName = "Chat";
 
         if (TextUtils.isEmpty(chatId)) {
@@ -64,6 +73,17 @@ public class ChatActivity extends AppCompatActivity {
         TextView tvTitle = findViewById(R.id.tvChatTitle);
         tvTitle.setText(chatName);
 
+        tvChatAvatar = findViewById(R.id.tvChatAvatar);
+        if (tvChatAvatar != null && !chatName.isEmpty()) {
+            tvChatAvatar.setText(String.valueOf(Character.toUpperCase(chatName.charAt(0))));
+        }
+
+        tvChatSubtitle = findViewById(R.id.tvChatSubtitle);
+        if (tvChatSubtitle != null) {
+            // Estado por defecto. Cuando metamos presencia (Realtime DB) lo cambiamos en vivo.
+            tvChatSubtitle.setText("Activo recientemente");
+        }
+
         ImageButton btnBack = findViewById(R.id.btnBackProfile);
         if (btnBack != null) btnBack.setOnClickListener(v -> finish());
 
@@ -72,7 +92,7 @@ public class ChatActivity extends AppCompatActivity {
         btnSend = findViewById(R.id.btnSend);
 
         rvMessages.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new ChatMessageAdapter(messages);
+        adapter = new ChatMessageAdapter(items);
         rvMessages.setAdapter(adapter);
 
         btnSend.setOnClickListener(v -> sendMessage());
@@ -107,12 +127,27 @@ public class ChatActivity extends AppCompatActivity {
                 .addSnapshotListener((snap, e) -> {
                     if (e != null || snap == null) return;
 
-                    messages.clear();
+                    items.clear();
+
+                    Calendar prevDay = null;
                     for (DocumentSnapshot doc : snap.getDocuments()) {
                         String text = doc.getString("text");
                         String senderId = doc.getString("senderId");
+                        Timestamp ts = doc.getTimestamp("createdAt");
+
+                        long createdAt = ts != null ? ts.toDate().getTime()
+                                : System.currentTimeMillis();
                         boolean mine = senderId != null && senderId.equals(user.getUid());
-                        messages.add(new ChatMessage(text != null ? text : "", mine));
+
+                        // Cabecera de fecha si cambiamos de día respecto al mensaje anterior
+                        Calendar thisDay = Calendar.getInstance();
+                        thisDay.setTimeInMillis(createdAt);
+                        if (prevDay == null || !sameDay(prevDay, thisDay)) {
+                            items.add(new ChatDateHeader(formatDayLabel(thisDay)));
+                            prevDay = thisDay;
+                        }
+
+                        items.add(new ChatMessage(text != null ? text : "", mine, createdAt));
                     }
                     adapter.notifyDataSetChanged();
                     scrollToBottom();
@@ -133,7 +168,6 @@ public class ChatActivity extends AppCompatActivity {
 
         etMessage.setText("");
 
-        // Mensaje en la subcolección
         Map<String, Object> msg = new HashMap<>();
         msg.put("text", text);
         msg.put("senderId", user.getUid());
@@ -145,7 +179,6 @@ public class ChatActivity extends AppCompatActivity {
                 .collection("messages")
                 .add(msg);
 
-        // Resumen en el doc del chat para la lista de conversaciones
         Map<String, Object> chatUpdate = new HashMap<>();
         chatUpdate.put("lastMessage", text);
         chatUpdate.put("lastSenderId", user.getUid());
@@ -161,5 +194,27 @@ public class ChatActivity extends AppCompatActivity {
         if (adapter != null && adapter.getItemCount() > 0) {
             rvMessages.scrollToPosition(adapter.getItemCount() - 1);
         }
+    }
+
+    // ===== Helpers fecha =====
+
+    private static boolean sameDay(Calendar a, Calendar b) {
+        return a.get(Calendar.YEAR) == b.get(Calendar.YEAR)
+                && a.get(Calendar.DAY_OF_YEAR) == b.get(Calendar.DAY_OF_YEAR);
+    }
+
+    private static String formatDayLabel(Calendar day) {
+        Calendar now = Calendar.getInstance();
+        if (sameDay(day, now)) return "Hoy";
+
+        Calendar yesterday = (Calendar) now.clone();
+        yesterday.add(Calendar.DAY_OF_YEAR, -1);
+        if (sameDay(day, yesterday)) return "Ayer";
+
+        Locale es = new Locale("es", "ES");
+        if (day.get(Calendar.YEAR) == now.get(Calendar.YEAR)) {
+            return new SimpleDateFormat("d 'de' MMMM", es).format(day.getTime());
+        }
+        return new SimpleDateFormat("d MMM yyyy", es).format(day.getTime());
     }
 }
