@@ -1,5 +1,6 @@
 package com.sazon.proyectointegrador;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -9,6 +10,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.sazon.proyectointegrador.R;
 import com.sazon.proyectointegrador.ui.chats.ChatsController;
 import com.sazon.proyectointegrador.ui.feed.FeedController;
@@ -46,6 +48,23 @@ public class MainActivity extends AppCompatActivity {
         profileController.init();
 
         setupBottomNav();
+        setupFab();
+    }
+
+    private void setupFab() {
+        FloatingActionButton fab = findViewById(R.id.fabCreateRecipe);
+        if (fab != null) {
+            fab.setOnClickListener(v ->
+                    startActivity(new Intent(this, CreateRecipeActivity.class)));
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Refrescar perfil y feed cuando volvemos de Crear receta o Perfil ajeno
+        if (feedController != null) feedController.refresh();
+        if (profileController != null) profileController.refresh();
     }
 
     @Override

@@ -6,6 +6,21 @@
     android:layout_height="match_parent"
     android:background="@color/fondo_app">
 
+    <!-- FAB para crear receta -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabCreateRecipe"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        android:contentDescription="Crear receta"
+        android:src="@android:drawable/ic_input_add"
+        app:backgroundTint="@color/color_principal_variante"
+        app:elevation="6dp"
+        app:layout_constraintBottom_toTopOf="@id/bottomNav"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:tint="@color/texto_sobre_principal" />
+
     <!-- Bottom Navigation (abajo) -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNav"
