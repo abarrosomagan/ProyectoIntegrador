@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -14,6 +15,7 @@ import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -24,21 +26,27 @@ import com.sazon.proyectointegrador.LoginActivity;
 import com.sazon.proyectointegrador.R;
 import com.sazon.proyectointegrador.adapters.PublicacionGridAdapter;
 import com.sazon.proyectointegrador.model.Publicacion;
+import com.sazon.proyectointegrador.util.AvatarHelper;
+import com.sazon.proyectointegrador.util.RecipeRepository;
 import com.sazon.proyectointegrador.util.SessionManager;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class ProfileController {
 
     private final AppCompatActivity a;
 
     private TextView tvAvatar, tvUsername, tvUserHandle, tvBio, tvChefRank;
+    private ImageView ivAvatar;
+    private View cardProfileHeader;
     private TextView tvStatRecipes, tvStatFollowers, tvStatFollowing;
 
-    private MaterialButton btnEdit, btnShare, btnTabMy, btnTabSaved;
+    private MaterialButton btnEdit, btnShare, btnFollow, btnTabMy, btnTabSaved;
     private ImageButton btnMore;
 
     private RecyclerView rv;
@@ -50,10 +58,14 @@ public class ProfileController {
 
     private final ArrayList<Publicacion> my = new ArrayList<>();
     private final ArrayList<Publicacion> saved = new ArrayList<>();
+    private final Set<String> savedIds = new HashSet<>();
 
     // Caché del perfil actual (lo que se ve en la UI)
     private String nombreActual = "";
     private String bioActual = "";
+    private boolean showingMyTab = true;
+
+    private AvatarHelper avatarHelper;
 
     public ProfileController(AppCompatActivity activity) {
         this.a = activity;
@@ -62,21 +74,38 @@ public class ProfileController {
     public void init() {
         bind();
         setupRecycler();
-        loadMock();
+        setupAvatarPicker();
         setupListeners();
         setupCollapsibleHeader();
 
         ImageButton btnBack = a.findViewById(R.id.btnBackProfile);
         if (btnBack != null) btnBack.setVisibility(View.GONE);
+        // En mi propio perfil, el botón "Seguir" no tiene sentido.
+        if (btnFollow != null) btnFollow.setVisibility(View.GONE);
 
         paintTabs(true);
-        showMy();
-
         cargarPerfilDesdeFirestore();
+        cargarRecetas();
+    }
+
+    /** Refresca recetas y datos del perfil (llamado desde MainActivity.onResume). */
+    public void refresh() {
+        cargarPerfilDesdeFirestore();
+        cargarRecetas();
+    }
+
+    private void setupAvatarPicker() {
+        avatarHelper = AvatarHelper.attach(a, url -> {
+            if (url == null) return;
+            renderAvatar(url, nombreActual);
+            Toast.makeText(a, "Foto de perfil actualizada", Toast.LENGTH_SHORT).show();
+        });
     }
 
     private void bind() {
         tvAvatar = a.findViewById(R.id.tvAvatar);
+        ivAvatar = a.findViewById(R.id.ivAvatar);
+        cardProfileHeader = a.findViewById(R.id.cardProfileHeader);
         tvUsername = a.findViewById(R.id.tvUsername);
         tvUserHandle = a.findViewById(R.id.tvUserHandle);
         tvBio = a.findViewById(R.id.tvBio);
@@ -88,6 +117,7 @@ public class ProfileController {
 
         btnEdit = a.findViewById(R.id.btnEditProfile);
         btnShare = a.findViewById(R.id.btnShareProfile);
+        btnFollow = a.findViewById(R.id.btnFollow);
         btnTabMy = a.findViewById(R.id.btnTabMyRecipes);
         btnTabSaved = a.findViewById(R.id.btnTabSaved);
 
@@ -149,6 +179,13 @@ public class ProfileController {
 
         if (btnMore != null) btnMore.setOnClickListener(this::showMoreMenu);
 
+        // Tap en el avatar → galería para cambiar la foto
+        if (cardProfileHeader != null) {
+            cardProfileHeader.setOnClickListener(v -> {
+                if (avatarHelper != null) avatarHelper.launchPicker();
+            });
+        }
+
         if (tvStatFollowers != null) tvStatFollowers.setOnClickListener(v ->
                 Toast.makeText(a, "Seguidores (pendiente)", Toast.LENGTH_SHORT).show()
         );
@@ -167,13 +204,19 @@ public class ProfileController {
                 doc -> {
                     String name;
                     String bio;
+                    String avatarUrl = "";
+                    long followers = 0;
+                    long following = 0;
 
                     if (doc.exists()) {
                         name = doc.getString("name");
                         bio  = doc.getString("bio");
+                        avatarUrl = doc.getString("avatarUrl");
+                        Long f = doc.getLong("followers");
+                        Long g = doc.getLong("following");
+                        if (f != null) followers = f;
+                        if (g != null) following = g;
                     } else {
-                        // Usuario en Auth sin doc en Firestore (cuentas antiguas).
-                        // Lo creamos al vuelo con lo que tengamos.
                         FirebaseUser u = SessionManager.currentUser();
                         name = u != null ? u.getDisplayName() : "";
                         String email = u != null ? u.getEmail() : "";
@@ -189,19 +232,91 @@ public class ProfileController {
                     }
                     if (name == null) name = "";
                     if (bio == null) bio = "";
+                    if (avatarUrl == null) avatarUrl = "";
 
                     nombreActual = name;
                     bioActual = bio;
 
                     pintarHeader(name, bio);
+                    renderAvatar(avatarUrl, name);
+                    if (tvStatFollowers != null) tvStatFollowers.setText(String.valueOf(followers));
+                    if (tvStatFollowing != null) tvStatFollowing.setText(String.valueOf(following));
                 },
                 e -> {
-                    // Si Firestore falla, al menos pintamos lo que sabemos de Auth
                     FirebaseUser u = SessionManager.currentUser();
                     String fallback = u != null && u.getDisplayName() != null ? u.getDisplayName() : "Usuario";
                     nombreActual = fallback;
                     pintarHeader(fallback, "");
+                    renderAvatar("", fallback);
                 });
+    }
+
+    /**
+     * Carga las recetas reales del usuario desde Firestore. Si la base aún
+     * está vacía (primera ejecución) cae a las recetas demo para que la
+     * pestaña Perfil no parezca rota.
+     */
+    private void cargarRecetas() {
+        String uid = SessionManager.currentUid();
+        if (uid == null) return;
+
+        // 1) Set de IDs guardados para marcar el icono "estrella"
+        RecipeRepository.savedIds(uid,
+                ids -> {
+                    savedIds.clear();
+                    savedIds.addAll(ids);
+                    // 2) Recetas propias
+                    RecipeRepository.byAuthor(uid,
+                            list -> {
+                                my.clear();
+                                if (list != null && !list.isEmpty()) {
+                                    for (Publicacion p : list) {
+                                        p.setGuardada(savedIds.contains(p.getId()));
+                                        my.add(p);
+                                    }
+                                } else if (com.sazon.proyectointegrador.util.DemoData.ENABLED) {
+                                    my.addAll(com.sazon.proyectointegrador.util.DemoData.recetasPropias());
+                                }
+                                if (tvStatRecipes != null)
+                                    tvStatRecipes.setText(String.valueOf(my.size()));
+                                if (tvChefRank != null)
+                                    tvChefRank.setText(chefRankFor(my.size()));
+                                if (showingMyTab) showMy();
+                            },
+                            e -> { /* dejamos lo que haya */ });
+
+                    // 3) Recetas guardadas
+                    RecipeRepository.savedBy(uid,
+                            list -> {
+                                saved.clear();
+                                if (list != null && !list.isEmpty()) {
+                                    saved.addAll(list);
+                                } else if (com.sazon.proyectointegrador.util.DemoData.ENABLED) {
+                                    saved.addAll(com.sazon.proyectointegrador.util.DemoData.recetasGuardadas());
+                                }
+                                if (!showingMyTab) showSaved();
+                            },
+                            e -> { /* idem */ });
+                },
+                e -> { /* sin saved set, seguimos igual */ });
+    }
+
+    private void renderAvatar(String avatarUrl, String name) {
+        if (ivAvatar == null || tvAvatar == null) return;
+        if (avatarUrl != null && !avatarUrl.isEmpty()) {
+            ivAvatar.setVisibility(View.VISIBLE);
+            tvAvatar.setVisibility(View.GONE);
+            Glide.with(a)
+                    .load(avatarUrl)
+                    .centerCrop()
+                    .into(ivAvatar);
+        } else {
+            ivAvatar.setVisibility(View.GONE);
+            tvAvatar.setVisibility(View.VISIBLE);
+            if (name != null && !name.isEmpty()) {
+                tvAvatar.setText(String.valueOf(Character.toUpperCase(name.charAt(0))));
+            }
+        }
     }
 
     private void pintarHeader(String name, String bio) {
@@ -312,11 +427,13 @@ public class ProfileController {
     }
 
     private void showMy() {
+        showingMyTab = true;
         if (adapter != null) adapter.updateData(new ArrayList<>(my));
         updateEmpty(my, true);
     }
 
     private void showSaved() {
+        showingMyTab = false;
         if (adapter != null) adapter.updateData(new ArrayList<>(saved));
         updateEmpty(saved, false);
     }

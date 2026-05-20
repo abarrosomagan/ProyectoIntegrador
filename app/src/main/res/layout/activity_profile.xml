@@ -109,6 +109,14 @@
                         android:textColor="@color/texto_sobre_principal"
                         android:textSize="38sp"
                         android:textStyle="bold" />
+
+                    <ImageView
+                        android:id="@+id/ivAvatar"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:contentDescription="Foto de perfil"
+                        android:scaleType="centerCrop"
+                        android:visibility="gone" />
                 </com.google.android.material.card.MaterialCardView>
             </FrameLayout>
 
@@ -206,6 +214,21 @@
                     app:cornerRadius="20dp"
                     app:strokeColor="@color/color_principal_variante"
                     app:strokeWidth="1.5dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnFollow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minWidth="150dp"
+                    android:paddingStart="20dp"
+                    android:paddingEnd="20dp"
+                    android:text="Seguir"
+                    android:textAllCaps="false"
+                    android:textColor="@color/texto_sobre_principal"
+                    android:textSize="13sp"
+                    android:visibility="gone"
+                    app:backgroundTint="@color/color_principal_variante"
+                    app:cornerRadius="20dp" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnShareProfile"
