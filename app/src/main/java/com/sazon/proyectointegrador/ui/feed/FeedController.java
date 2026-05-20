@@ -22,6 +22,7 @@ import com.sazon.proyectointegrador.ProfileActivity;
 import com.sazon.proyectointegrador.R;
 import com.sazon.proyectointegrador.adapters.PublicacionAdapter;
 import com.sazon.proyectointegrador.model.Publicacion;
+import com.sazon.proyectointegrador.util.RecipeRepository;
 import com.sazon.proyectointegrador.util.SessionManager;
 import com.sazon.proyectointegrador.util.SimpleTextWatcher;
 
@@ -57,8 +58,8 @@ public class FeedController {
     public void init() {
         firebaseAuth = FirebaseAuth.getInstance();
 
-        // Hoy usas mock, mañana cambias a FirestoreFeedRepository sin tocar UI
-        repository = new MockFeedRepository();
+        // Firestore primero, mock como fallback si la colección está vacía.
+        repository = new FirestoreFeedRepository();
 
         bind();
         setupHeader();
@@ -67,7 +68,11 @@ public class FeedController {
         setupRefresh();
         setupMenu();
 
-        // Primera carga
+        loadFeed(false);
+    }
+
+    /** Recarga el feed desde fuera (por ejemplo, al volver de Crear receta). */
+    public void refresh() {
         loadFeed(false);
     }
 
@@ -253,7 +258,7 @@ public class FeedController {
     }
 
     // -------------------------
-    // Repository (Mock ahora)
+    // Repository (Firestore + fallback mock)
     // -------------------------
 
     public interface FeedRepository {
@@ -328,6 +333,28 @@ public class FeedController {
                     true));
 
             return lista;
+        }
+    }
+
+    /**
+     * Implementación real con Firestore. Si /recipes está vacío (primera ejecución,
+     * cero recetas reales todavía), cae a mock para que el feed no parezca roto.
+     */
+    public static class FirestoreFeedRepository implements FeedRepository {
+
+        private final MockFeedRepository fallback = new MockFeedRepository();
+
+        @Override
+        public void fetchFeed(Callback cb) {
+            RecipeRepository.feed(50,
+                    list -> {
+                        if (list == null || list.isEmpty()) {
+                            fallback.fetchFeed(cb);
+                        } else {
+                            cb.onSuccess(list);
+                        }
+                    },
+                    cb::onError);
         }
     }
 }
