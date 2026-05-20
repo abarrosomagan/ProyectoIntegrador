@@ -12,6 +12,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.sazon.proyectointegrador.R;
 import com.sazon.proyectointegrador.model.Publicacion;
+import com.sazon.proyectointegrador.util.RecipeRepository;
+import com.sazon.proyectointegrador.util.SessionManager;
 
 import java.util.ArrayList;
 
@@ -69,17 +71,44 @@ public class PublicacionAdapter extends RecyclerView.Adapter<PublicacionAdapter.
             if (onPostClick != null) onPostClick.onPostClick(p);
         });
 
-        // Guardar: pinta icono + toggle mock
+        // Guardar: pinta icono + persiste en Firestore
         h.btnGuardar.setImageResource(
                 guardada ? android.R.drawable.btn_star_big_on : android.R.drawable.btn_star_big_off
         );
 
         h.btnGuardar.setOnClickListener(v -> {
+            String uid = SessionManager.currentUid();
+            String recipeId = p.getId();
+            if (uid == null || recipeId == null || recipeId.isEmpty()) {
+                // Sin sesión o item demo sin id real → toggle solo visual
+                p.setGuardada(!p.isGuardada());
+                notifyItemChanged(h.getAdapterPosition());
+                return;
+            }
             boolean nuevo = !p.isGuardada();
             p.setGuardada(nuevo);
             notifyItemChanged(h.getAdapterPosition());
+            RecipeRepository.toggleSaved(recipeId, uid, nuevo, null, e -> {
+                // Si falla, revertimos visualmente
+                p.setGuardada(!nuevo);
+                notifyItemChanged(h.getAdapterPosition());
+            });
+        });
 
-            // FUTURO Firebase: persistir aquí (o desde Activity/ViewModel)
+        // Click en likes: persiste y actualiza contador
+        h.tvLikes.setOnClickListener(v -> {
+            String uid = SessionManager.currentUid();
+            String recipeId = p.getId();
+            if (uid == null || recipeId == null || recipeId.isEmpty()) return;
+            // Optimista: +1 y persiste
+            int nuevoLikes = p.getLikes() + 1;
+            p.setLikes(nuevoLikes);
+            h.tvLikes.setText("❤️ " + nuevoLikes);
+            RecipeRepository.toggleLike(recipeId, uid, true, null, e -> {
+                // Si falla, restamos
+                p.setLikes(nuevoLikes - 1);
+                h.tvLikes.setText("❤️ " + (nuevoLikes - 1));
+            });
         });
     }
 

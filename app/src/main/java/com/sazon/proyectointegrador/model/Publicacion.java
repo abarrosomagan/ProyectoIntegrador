@@ -1,5 +1,7 @@
 package com.sazon.proyectointegrador.model;
 
+import com.google.firebase.firestore.Exclude;
+
 public class Publicacion {
 
     private String id;
@@ -56,6 +58,12 @@ public class Publicacion {
 
     public int getLikes() { return likes; }
 
+    /**
+     * "guardada" es estado por usuario, NO un campo del doc de la receta.
+     * Lo excluimos de la serializacion Firestore — se computa al cargar las
+     * recetas comparando con users/{uid}/saved.
+     */
+    @Exclude
     public boolean isGuardada() { return guardada; }
 
     // ===== Setters =====
@@ -76,5 +84,6 @@ public class Publicacion {
 
     public void setLikes(int likes) { this.likes = likes; }
 
+    @Exclude
     public void setGuardada(boolean guardada) { this.guardada = guardada; }
 }
