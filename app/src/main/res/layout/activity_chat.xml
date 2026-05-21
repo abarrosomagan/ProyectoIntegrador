@@ -106,6 +106,23 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+    <TextView
+        android:id="@+id/tvChatEmpty"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:lineSpacingExtra="3dp"
+        android:paddingStart="32dp"
+        android:paddingEnd="32dp"
+        android:text="👋 Aún no hay mensajes.\nSé el primero en saludar."
+        android:textColor="@color/texto_secundario"
+        android:textSize="14sp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/rvMessages"
+        app:layout_constraintEnd_toEndOf="@id/rvMessages"
+        app:layout_constraintStart_toStartOf="@id/rvMessages"
+        app:layout_constraintTop_toTopOf="@id/rvMessages" />
+
     <!-- Barra de input -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/chat_input_bar"

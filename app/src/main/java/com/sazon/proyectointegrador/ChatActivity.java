@@ -2,6 +2,7 @@ package com.sazon.proyectointegrador;
 
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -21,6 +22,7 @@ import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.SetOptions;
+import com.google.firebase.firestore.WriteBatch;
 import com.sazon.proyectointegrador.adapters.ChatMessageAdapter;
 import com.sazon.proyectointegrador.model.ChatDateHeader;
 import com.sazon.proyectointegrador.model.ChatItem;
@@ -31,8 +33,8 @@ import com.sazon.proyectointegrador.util.SessionManager;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -49,9 +51,11 @@ public class ChatActivity extends AppCompatActivity {
     private MaterialButton btnSend;
     private TextView tvChatAvatar;
     private TextView tvChatSubtitle;
+    private TextView tvChatEmpty;
 
     private String chatId;
     private String chatName;
+    private String otherUid;
 
     private ListenerRegistration messagesListener;
 
@@ -80,9 +84,11 @@ public class ChatActivity extends AppCompatActivity {
         }
 
         tvChatSubtitle = findViewById(R.id.tvChatSubtitle);
-        if (tvChatSubtitle != null) {
-            // Estado por defecto. Cuando metamos presencia (Realtime DB) lo cambiamos en vivo.
-            tvChatSubtitle.setText("Activo recientemente");
+        if (tvChatSubtitle != null) tvChatSubtitle.setText("Activo recientemente");
+
+        tvChatEmpty = findViewById(R.id.tvChatEmpty);
+        if (tvChatEmpty != null && chatName != null) {
+            tvChatEmpty.setText("👋 Aún no hay mensajes.\nSé el primero en saludar a " + chatName + ".");
         }
 
         ImageButton btnBack = findViewById(R.id.btnBackProfile);
@@ -94,9 +100,26 @@ public class ChatActivity extends AppCompatActivity {
 
         rvMessages.setLayoutManager(new LinearLayoutManager(this));
         adapter = new ChatMessageAdapter(items);
+        adapter.setOnDeleteMessage(this::eliminarMensaje);
         rvMessages.setAdapter(adapter);
 
+        // El otro participante lo derivamos del chatId determinista ("uidA_uidB")
+        deduceOtherUid();
+
         btnSend.setOnClickListener(v -> sendMessage());
+    }
+
+    private void deduceOtherUid() {
+        if (DemoData.isDemoChatId(chatId)) {
+            otherUid = null;
+            return;
+        }
+        String meUid = SessionManager.currentUid();
+        if (meUid == null) return;
+        String[] parts = chatId.split("_");
+        if (parts.length == 2) {
+            otherUid = parts[0].equals(meUid) ? parts[1] : parts[0];
+        }
     }
 
     @Override
@@ -109,13 +132,6 @@ public class ChatActivity extends AppCompatActivity {
         }
     }
 
-    private void cargarMensajesDemo() {
-        items.clear();
-        items.addAll(DemoData.messages(chatId));
-        adapter.notifyDataSetChanged();
-        scrollToBottom();
-    }
-
     @Override
     protected void onStop() {
         super.onStop();
@@ -125,11 +141,20 @@ public class ChatActivity extends AppCompatActivity {
         }
     }
 
+    private void cargarMensajesDemo() {
+        items.clear();
+        items.addAll(DemoData.messages(chatId));
+        adapter.notifyDataSetChanged();
+        actualizarEstadoVacio();
+        scrollToBottom();
+    }
+
     // ===== Carga en tiempo real =====
 
     private void listenMessages() {
         FirebaseUser user = SessionManager.currentUser();
         if (user == null) return;
+        final String meUid = user.getUid();
 
         messagesListener = SessionManager.db()
                 .collection(SessionManager.COLLECTION_CHATS)
@@ -140,18 +165,19 @@ public class ChatActivity extends AppCompatActivity {
                     if (e != null || snap == null) return;
 
                     items.clear();
-
+                    List<DocumentSnapshot> docsParaMarcar = new ArrayList<>();
                     Calendar prevDay = null;
+
                     for (DocumentSnapshot doc : snap.getDocuments()) {
                         String text = doc.getString("text");
                         String senderId = doc.getString("senderId");
                         Timestamp ts = doc.getTimestamp("createdAt");
+                        List<String> readBy = (List<String>) doc.get("readBy");
 
                         long createdAt = ts != null ? ts.toDate().getTime()
                                 : System.currentTimeMillis();
-                        boolean mine = senderId != null && senderId.equals(user.getUid());
+                        boolean mine = senderId != null && senderId.equals(meUid);
 
-                        // Cabecera de fecha si cambiamos de día respecto al mensaje anterior
                         Calendar thisDay = Calendar.getInstance();
                         thisDay.setTimeInMillis(createdAt);
                         if (prevDay == null || !sameDay(prevDay, thisDay)) {
@@ -159,11 +185,38 @@ public class ChatActivity extends AppCompatActivity {
                             prevDay = thisDay;
                         }
 
-                        items.add(new ChatMessage(text != null ? text : "", mine, createdAt));
+                        boolean readByOther = mine && otherUid != null
+                                && readBy != null && readBy.contains(otherUid);
+
+                        items.add(new ChatMessage(
+                                text != null ? text : "",
+                                mine,
+                                createdAt,
+                                doc.getId(),
+                                readByOther));
+
+                        // Si es del otro y aún no lo he leído, lo marco
+                        if (!mine && (readBy == null || !readBy.contains(meUid))) {
+                            docsParaMarcar.add(doc);
+                        }
                     }
                     adapter.notifyDataSetChanged();
+                    actualizarEstadoVacio();
                     scrollToBottom();
+
+                    if (!docsParaMarcar.isEmpty()) {
+                        marcarComoLeidos(docsParaMarcar, meUid);
+                    }
                 });
+    }
+
+    /** Añade meUid al array readBy de cada mensaje en un único batch. */
+    private void marcarComoLeidos(List<DocumentSnapshot> docs, String meUid) {
+        WriteBatch batch = SessionManager.db().batch();
+        for (DocumentSnapshot d : docs) {
+            batch.update(d.getReference(), "readBy", FieldValue.arrayUnion(meUid));
+        }
+        batch.commit(); // los errores aquí no rompen nada visible
     }
 
     // ===== Envío =====
@@ -172,11 +225,11 @@ public class ChatActivity extends AppCompatActivity {
         String text = etMessage.getText() != null ? etMessage.getText().toString().trim() : "";
         if (text.isEmpty()) return;
 
-        // En los chats demo no tocamos Firestore: añadimos el mensaje al vuelo
         if (DemoData.isDemoChatId(chatId)) {
             etMessage.setText("");
             items.add(new ChatMessage(text, true, System.currentTimeMillis()));
             adapter.notifyDataSetChanged();
+            actualizarEstadoVacio();
             scrollToBottom();
             return;
         }
@@ -193,6 +246,7 @@ public class ChatActivity extends AppCompatActivity {
         msg.put("text", text);
         msg.put("senderId", user.getUid());
         msg.put("createdAt", FieldValue.serverTimestamp());
+        msg.put("readBy", java.util.Collections.singletonList(user.getUid()));
 
         SessionManager.db()
                 .collection(SessionManager.COLLECTION_CHATS)
@@ -211,10 +265,33 @@ public class ChatActivity extends AppCompatActivity {
                 .set(chatUpdate, SetOptions.merge());
     }
 
+    // ===== Eliminar =====
+
+    private void eliminarMensaje(String docId) {
+        if (DemoData.isDemoChatId(chatId) || docId == null) return;
+        SessionManager.db()
+                .collection(SessionManager.COLLECTION_CHATS)
+                .document(chatId)
+                .collection("messages")
+                .document(docId)
+                .delete()
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "No se pudo eliminar", Toast.LENGTH_SHORT).show());
+    }
+
     private void scrollToBottom() {
         if (adapter != null && adapter.getItemCount() > 0) {
             rvMessages.scrollToPosition(adapter.getItemCount() - 1);
         }
+    }
+
+    private void actualizarEstadoVacio() {
+        if (tvChatEmpty == null || rvMessages == null) return;
+        boolean conMensajes = false;
+        for (ChatItem it : items) {
+            if (it instanceof ChatMessage) { conMensajes = true; break; }
+        }
+        tvChatEmpty.setVisibility(conMensajes ? View.GONE : View.VISIBLE);
     }
 
     // ===== Helpers fecha =====
