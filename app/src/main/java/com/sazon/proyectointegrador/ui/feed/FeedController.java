@@ -125,7 +125,7 @@ public class FeedController {
 
         feedAdapter = new PublicacionAdapter(
                 new ArrayList<>(),
-                pub -> Toast.makeText(a, "Detalle pendiente: " + pub.getTitulo(), Toast.LENGTH_SHORT).show(),
+                pub -> openRecipeDetail(pub),
                 pub -> openAuthorProfile(pub)
         );
 
@@ -229,6 +229,18 @@ public class FeedController {
 
     private void setRefreshing(boolean refreshing) {
         if (swipeFeed != null) swipeFeed.setRefreshing(refreshing);
+    }
+
+    private void openRecipeDetail(Publicacion publicacion) {
+        String id = publicacion.getId();
+        if (id == null || id.isEmpty()) {
+            Toast.makeText(a, "Receta de demo (sin detalle)", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Intent i = new Intent(a,
+                com.sazon.proyectointegrador.RecipeDetailActivity.class);
+        i.putExtra(com.sazon.proyectointegrador.RecipeDetailActivity.EXTRA_RECIPE_ID, id);
+        a.startActivity(i);
     }
 
     private void openAuthorProfile(Publicacion publicacion) {

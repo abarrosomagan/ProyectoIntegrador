@@ -15,6 +15,8 @@ import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+
 import com.bumptech.glide.Glide;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.button.MaterialButton;
@@ -55,6 +57,7 @@ public class ProfileController {
     private View emptyState;
     private TextView tvEmptyTitle, tvEmptySubtitle;
     private MaterialButton btnEmptyAction;
+    private SwipeRefreshLayout swipeProfile;
 
     private final ArrayList<Publicacion> my = new ArrayList<>();
     private final ArrayList<Publicacion> saved = new ArrayList<>();
@@ -122,6 +125,7 @@ public class ProfileController {
         btnTabSaved = a.findViewById(R.id.btnTabSaved);
 
         rv = a.findViewById(R.id.rvProfileList);
+        swipeProfile = a.findViewById(R.id.swipeProfile);
         btnMore = a.findViewById(R.id.btnMoreProfile);
 
         emptyState = a.findViewById(R.id.emptyStateProfile);
@@ -136,9 +140,24 @@ public class ProfileController {
 
         adapter = new PublicacionGridAdapter(
                 new ArrayList<>(),
-                p -> Toast.makeText(a, "Detalle pendiente: " + p.getTitulo(), Toast.LENGTH_SHORT).show()
-        );
+                this::abrirDetalleReceta);
         rv.setAdapter(adapter);
+
+        if (swipeProfile != null) {
+            swipeProfile.setColorSchemeResources(
+                    R.color.color_principal_variante, R.color.color_principal);
+            swipeProfile.setOnRefreshListener(() -> cargarRecetas());
+        }
+    }
+
+    private void abrirDetalleReceta(Publicacion p) {
+        if (p == null || p.getId() == null || p.getId().isEmpty()) {
+            Toast.makeText(a, "Receta de demo (sin detalle)", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Intent i = new Intent(a, com.sazon.proyectointegrador.RecipeDetailActivity.class);
+        i.putExtra(com.sazon.proyectointegrador.RecipeDetailActivity.EXTRA_RECIPE_ID, p.getId());
+        a.startActivity(i);
     }
 
     /**
@@ -174,8 +193,7 @@ public class ProfileController {
 
         if (btnEdit != null) btnEdit.setOnClickListener(v -> mostrarDialogoEditarPerfil());
 
-        if (btnShare != null) btnShare.setOnClickListener(v ->
-                Toast.makeText(a, "Compartir perfil (pendiente)", Toast.LENGTH_SHORT).show());
+        if (btnShare != null) btnShare.setOnClickListener(v -> compartirPerfil());
 
         if (btnMore != null) btnMore.setOnClickListener(this::showMoreMenu);
 
@@ -258,7 +276,10 @@ public class ProfileController {
      */
     private void cargarRecetas() {
         String uid = SessionManager.currentUid();
-        if (uid == null) return;
+        if (uid == null) {
+            if (swipeProfile != null) swipeProfile.setRefreshing(false);
+            return;
+        }
 
         // 1) Set de IDs guardados para marcar el icono "estrella"
         RecipeRepository.savedIds(uid,
@@ -282,8 +303,11 @@ public class ProfileController {
                                 if (tvChefRank != null)
                                     tvChefRank.setText(chefRankFor(my.size()));
                                 if (showingMyTab) showMy();
+                                if (swipeProfile != null) swipeProfile.setRefreshing(false);
                             },
-                            e -> { /* dejamos lo que haya */ });
+                            e -> {
+                                if (swipeProfile != null) swipeProfile.setRefreshing(false);
+                            });
 
                     // 3) Recetas guardadas
                     RecipeRepository.savedBy(uid,
@@ -298,7 +322,9 @@ public class ProfileController {
                             },
                             e -> { /* idem */ });
                 },
-                e -> { /* sin saved set, seguimos igual */ });
+                e -> {
+                    if (swipeProfile != null) swipeProfile.setRefreshing(false);
+                });
     }
 
     private void renderAvatar(String avatarUrl, String name) {
@@ -338,6 +364,15 @@ public class ProfileController {
         }
         if (name == null || name.isEmpty()) return "chef";
         return name.toLowerCase().replaceAll("\\s+", "");
+    }
+
+    private void compartirPerfil() {
+        String handle = buildHandle(nombreActual);
+        String texto = "Mira el perfil de @" + handle + " en Sazón 🍳";
+        Intent share = new Intent(Intent.ACTION_SEND);
+        share.setType("text/plain");
+        share.putExtra(Intent.EXTRA_TEXT, texto);
+        a.startActivity(Intent.createChooser(share, "Compartir perfil"));
     }
 
     /** Rango de chef en función del número de recetas publicadas. */
