@@ -39,6 +39,20 @@ Ambos autores participan en el diseño, la planificación y el desarrollo técni
 
 ---
 
+## Cuentas de prueba
+
+Para revisar la app sin tener que registrarse, hay tres cuentas de demostración cargadas en Firebase Authentication. **Son cuentas de prueba con datos ficticios**, no contienen información real:
+
+| Correo | Contraseña |
+|---|---|
+| `fer1@test.com` | `123456` |
+| `fer2@test.com` | `123456` |
+| `test1@sazon.com` | `123456` |
+
+> Pareja recomendada para probar el chat en dos dispositivos a la vez: `fer1@test.com` ↔ `fer2@test.com`. Las usamos para enseñar mensajes en tiempo real, separadores de fecha y *read receipts*.
+
+---
+
 ## Estado actual
 
 El proyecto se encuentra en una fase avanzada con la mayor parte del flujo principal funcional sobre Firebase. A día de hoy ya están implementados de forma real:
