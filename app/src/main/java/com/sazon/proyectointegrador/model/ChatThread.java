@@ -6,13 +6,24 @@ public class ChatThread {
     private final String lastMessage;
     private final String time;
     private final int unread;
+    private final boolean presenceActive;
+    private final boolean lastIsMine;
+    private final boolean lastReadByOther;
 
     public ChatThread(String id, String name, String lastMessage, String time, int unread) {
+        this(id, name, lastMessage, time, unread, false, false, false);
+    }
+
+    public ChatThread(String id, String name, String lastMessage, String time, int unread,
+                      boolean presenceActive, boolean lastIsMine, boolean lastReadByOther) {
         this.id = id;
         this.name = name;
         this.lastMessage = lastMessage;
         this.time = time;
         this.unread = unread;
+        this.presenceActive = presenceActive;
+        this.lastIsMine = lastIsMine;
+        this.lastReadByOther = lastReadByOther;
     }
 
     public String getId() { return id; }
@@ -20,4 +31,7 @@ public class ChatThread {
     public String getLastMessage() { return lastMessage; }
     public String getTime() { return time; }
     public int getUnread() { return unread; }
+    public boolean isPresenceActive() { return presenceActive; }
+    public boolean isLastIsMine() { return lastIsMine; }
+    public boolean isLastReadByOther() { return lastReadByOther; }
 }

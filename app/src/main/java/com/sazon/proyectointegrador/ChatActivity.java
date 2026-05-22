@@ -55,6 +55,7 @@ public class ChatActivity extends AppCompatActivity {
     private TextView tvChatAvatar;
     private TextView tvChatSubtitle;
     private TextView tvChatEmpty;
+    private View presenceDotHeader;
 
     private String chatId;
     private String chatName;
@@ -93,6 +94,8 @@ public class ChatActivity extends AppCompatActivity {
         tvChatSubtitle = findViewById(R.id.tvChatSubtitle);
         if (tvChatSubtitle != null) tvChatSubtitle.setText("Activo recientemente");
 
+        presenceDotHeader = findViewById(R.id.presenceDotHeader);
+
         tvChatEmpty = findViewById(R.id.tvChatEmpty);
         if (tvChatEmpty != null && chatName != null) {
             tvChatEmpty.setText("👋 Aún no hay mensajes.\nSé el primero en saludar a " + chatName + ".");
@@ -108,6 +111,8 @@ public class ChatActivity extends AppCompatActivity {
         rvMessages.setLayoutManager(new LinearLayoutManager(this));
         adapter = new ChatMessageAdapter(items);
         adapter.setOnDeleteMessage(this::eliminarMensaje);
+        adapter.setOnReactionToggle(this::reaccionarMensaje);
+        adapter.setMyUid(SessionManager.currentUid());
         rvMessages.setAdapter(adapter);
 
         // El otro participante lo derivamos del chatId determinista ("uidA_uidB")
@@ -193,6 +198,25 @@ public class ChatActivity extends AppCompatActivity {
                         Timestamp ts = doc.getTimestamp("createdAt");
                         List<String> readBy = (List<String>) doc.get("readBy");
 
+                        java.util.Map<String, java.util.List<String>> reactionsParsed
+                                = new java.util.HashMap<>();
+                        Object reactionsObj = doc.get("reactions");
+                        if (reactionsObj instanceof java.util.Map) {
+                            for (java.util.Map.Entry<?, ?> entry :
+                                    ((java.util.Map<?, ?>) reactionsObj).entrySet()) {
+                                if (entry.getKey() != null
+                                        && entry.getValue() instanceof java.util.List) {
+                                    java.util.List<String> uids = new java.util.ArrayList<>();
+                                    for (Object o : (java.util.List<?>) entry.getValue()) {
+                                        if (o != null) uids.add(o.toString());
+                                    }
+                                    if (!uids.isEmpty()) {
+                                        reactionsParsed.put(entry.getKey().toString(), uids);
+                                    }
+                                }
+                            }
+                        }
+
                         long createdAt = ts != null ? ts.toDate().getTime()
                                 : System.currentTimeMillis();
                         boolean mine = senderId != null && senderId.equals(meUid);
@@ -212,7 +236,8 @@ public class ChatActivity extends AppCompatActivity {
                                 mine,
                                 createdAt,
                                 doc.getId(),
-                                readByOther));
+                                readByOther,
+                                reactionsParsed));
 
                         // Si es del otro y aún no lo he leído, lo marco
                         if (!mine && (readBy == null || !readBy.contains(meUid))) {
@@ -295,6 +320,28 @@ public class ChatActivity extends AppCompatActivity {
 
     // ===== Eliminar =====
 
+    private void reaccionarMensaje(String docId, String emoji, boolean nowReacting) {
+        if (DemoData.isDemoChatId(chatId) || docId == null || emoji == null) return;
+        String uid = SessionManager.currentUid();
+        if (uid == null) return;
+
+        Object change = nowReacting
+                ? FieldValue.arrayUnion(uid)
+                : FieldValue.arrayRemove(uid);
+        Map<String, Object> update = new HashMap<>();
+        update.put("reactions." + emoji, change);
+
+        SessionManager.db()
+                .collection(SessionManager.COLLECTION_CHATS)
+                .document(chatId)
+                .collection("messages")
+                .document(docId)
+                .set(update, SetOptions.merge())
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "No se pudo reaccionar",
+                                Toast.LENGTH_SHORT).show());
+    }
+
     private void eliminarMensaje(String docId) {
         if (DemoData.isDemoChatId(chatId) || docId == null) return;
         SessionManager.db()
@@ -359,6 +406,11 @@ public class ChatActivity extends AppCompatActivity {
                         tvChatSubtitle.setText("en línea");
                     } else {
                         tvChatSubtitle.setText(formatLastSeen(lastSeen));
+                    }
+                    if (presenceDotHeader != null) {
+                        boolean enLinea = Boolean.TRUE.equals(active)
+                                || Boolean.TRUE.equals(typing);
+                        presenceDotHeader.setVisibility(enLinea ? View.VISIBLE : View.GONE);
                     }
                 });
     }

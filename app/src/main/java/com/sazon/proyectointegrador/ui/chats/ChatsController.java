@@ -155,16 +155,32 @@ public class ChatsController {
                         Boolean otherTyping = otherUid != null
                                 ? doc.getBoolean("presence." + otherUid + ".typing")
                                 : false;
+                        Boolean otherActive = otherUid != null
+                                ? doc.getBoolean("presence." + otherUid + ".active")
+                                : false;
                         String preview = Boolean.TRUE.equals(otherTyping)
                                 ? "escribiendo..."
                                 : (lastMessage != null ? lastMessage : "");
+
+                        boolean lastIsMine = lastSenderId != null && lastSenderId.equals(uid);
+                        // El otro ha leído mi último mensaje si su lastReadAt es >= lastAt
+                        boolean lastReadByOther = false;
+                        if (lastIsMine && lastAt != null && otherUid != null) {
+                            Timestamp otherReadAt = doc.getTimestamp("lastReadAt." + otherUid);
+                            lastReadByOther = otherReadAt != null
+                                    && otherReadAt.compareTo(lastAt) >= 0;
+                        }
 
                         ChatThread thread = new ChatThread(
                                 chatId,
                                 otherName,
                                 preview,
                                 formatChatTime(lastAt),
-                                hasUnread(uid, lastSenderId, lastAt, lastReadAt) ? 1 : 0
+                                hasUnread(uid, lastSenderId, lastAt, lastReadAt) ? 1 : 0,
+                                Boolean.TRUE.equals(otherActive)
+                                        || Boolean.TRUE.equals(otherTyping),
+                                lastIsMine,
+                                lastReadByOther
                         );
                         filas.add(new Object[]{ thread, lastAt });
                     }
