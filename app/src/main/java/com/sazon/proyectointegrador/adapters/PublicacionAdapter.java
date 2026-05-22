@@ -53,11 +53,12 @@ public class PublicacionAdapter extends RecyclerView.Adapter<PublicacionAdapter.
         String tiempo = formatTime(p.getCreatedAt());
         int likes = p.getLikes();
         boolean guardada = p.isGuardada();
+        boolean liked = p.isLiked();
 
         h.tvAutor.setText(autor);
         h.tvTiempo.setText(tiempo);
         h.tvTitulo.setText(titulo);
-        h.tvLikes.setText("❤️ " + likes);
+        h.tvLikes.setText((liked ? "♥ " : "♡ ") + likes);
 
         // Click en autor/avatar -> perfil usuario
         View.OnClickListener authorClick = v -> {
@@ -100,14 +101,16 @@ public class PublicacionAdapter extends RecyclerView.Adapter<PublicacionAdapter.
             String uid = SessionManager.currentUid();
             String recipeId = p.getId();
             if (uid == null || recipeId == null || recipeId.isEmpty()) return;
-            // Optimista: +1 y persiste
-            int nuevoLikes = p.getLikes() + 1;
+            boolean nuevoLiked = !p.isLiked();
+            int anteriorLikes = p.getLikes();
+            int nuevoLikes = Math.max(0, anteriorLikes + (nuevoLiked ? 1 : -1));
+            p.setLiked(nuevoLiked);
             p.setLikes(nuevoLikes);
-            h.tvLikes.setText("❤️ " + nuevoLikes);
-            RecipeRepository.toggleLike(recipeId, uid, true, null, e -> {
-                // Si falla, restamos
-                p.setLikes(nuevoLikes - 1);
-                h.tvLikes.setText("❤️ " + (nuevoLikes - 1));
+            h.tvLikes.setText((nuevoLiked ? "♥ " : "♡ ") + nuevoLikes);
+            RecipeRepository.toggleLike(recipeId, uid, nuevoLiked, null, e -> {
+                p.setLiked(!nuevoLiked);
+                p.setLikes(anteriorLikes);
+                h.tvLikes.setText((!nuevoLiked ? "♥ " : "♡ ") + anteriorLikes);
             });
         });
     }

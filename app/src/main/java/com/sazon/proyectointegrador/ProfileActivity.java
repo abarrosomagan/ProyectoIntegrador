@@ -133,10 +133,19 @@ public class ProfileActivity extends AppCompatActivity {
         rv.setLayoutManager(new GridLayoutManager(this, 3));
         adapter = new PublicacionGridAdapter(
                 new ArrayList<>(),
-                p -> Toast.makeText(this,
-                        "Detalle pendiente: " + p.getTitulo(), Toast.LENGTH_SHORT).show()
+                this::abrirDetalleReceta
         );
         rv.setAdapter(adapter);
+    }
+
+    private void abrirDetalleReceta(Publicacion p) {
+        if (p == null || p.getId() == null || p.getId().isEmpty()) {
+            Toast.makeText(this, "Receta no disponible", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        android.content.Intent i = new android.content.Intent(this, RecipeDetailActivity.class);
+        i.putExtra(RecipeDetailActivity.EXTRA_RECIPE_ID, p.getId());
+        startActivity(i);
     }
 
     private void setupCollapsibleHeader() {

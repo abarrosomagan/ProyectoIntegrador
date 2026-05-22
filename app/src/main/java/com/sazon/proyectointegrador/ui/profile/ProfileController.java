@@ -514,7 +514,7 @@ public class ProfileController {
                 btnEmptyAction.setVisibility(View.VISIBLE);
                 btnEmptyAction.setText("Crear receta");
                 btnEmptyAction.setOnClickListener(v ->
-                        Toast.makeText(a, "Ir a crear receta (pendiente)", Toast.LENGTH_SHORT).show()
+                        a.startActivity(new Intent(a, com.sazon.proyectointegrador.CreateRecipeActivity.class))
                 );
             } else {
                 btnEmptyAction.setVisibility(View.GONE);

@@ -7,6 +7,7 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.WriteBatch;
@@ -181,10 +182,34 @@ public final class RecipeRepository {
     public static void likedIds(@NonNull String uid,
                                 @NonNull OnSuccessListener<Set<String>> onOk,
                                 @NonNull OnFailureListener onErr) {
-        // Esto requeriría una collectionGroup query para escalar.
-        // Para una app de demo lo dejamos vacío y tratamos las likes como
-        // "incrementan contador" pero sin estado per-user. Próxima tanda.
-        onOk.onSuccess(new HashSet<>());
+        SessionManager.db()
+                .collectionGroup(SUBCOLLECTION_LIKES)
+                .whereEqualTo("uid", uid)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    Set<String> ids = new HashSet<>();
+                    for (QueryDocumentSnapshot doc : snap) {
+                        DocumentReference recipeRef = doc.getReference().getParent().getParent();
+                        if (recipeRef != null) ids.add(recipeRef.getId());
+                    }
+                    onOk.onSuccess(ids);
+                })
+                .addOnFailureListener(onErr);
+    }
+
+    /** Devuelve si el usuario ya dio like a una receta concreta. */
+    public static void isLiked(@NonNull String recipeId,
+                               @NonNull String uid,
+                               @NonNull OnSuccessListener<Boolean> onOk,
+                               @NonNull OnFailureListener onErr) {
+        SessionManager.db()
+                .collection(COLLECTION_RECIPES)
+                .document(recipeId)
+                .collection(SUBCOLLECTION_LIKES)
+                .document(uid)
+                .get()
+                .addOnSuccessListener(doc -> onOk.onSuccess(doc != null && doc.exists()))
+                .addOnFailureListener(onErr);
     }
 
     // ===== Guardados =====

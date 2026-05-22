@@ -13,6 +13,7 @@ public class Publicacion {
     private String imageUrl;
     private int likes;
     private boolean guardada;
+    private boolean liked;
 
     // Constructor vacío (necesario para Firebase)
     public Publicacion() {
@@ -66,6 +67,9 @@ public class Publicacion {
     @Exclude
     public boolean isGuardada() { return guardada; }
 
+    @Exclude
+    public boolean isLiked() { return liked; }
+
     // ===== Setters =====
 
     public void setId(String id) { this.id = id; }
@@ -86,4 +90,7 @@ public class Publicacion {
 
     @Exclude
     public void setGuardada(boolean guardada) { this.guardada = guardada; }
+
+    @Exclude
+    public void setLiked(boolean liked) { this.liked = liked; }
 }

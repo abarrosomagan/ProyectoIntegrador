@@ -244,11 +244,14 @@ public class FeedController {
     }
 
     private void openAuthorProfile(Publicacion publicacion) {
+        if (publicacion.getAuthorId() == null || publicacion.getAuthorId().isEmpty()) {
+            Toast.makeText(a, "Perfil no disponible para esta receta", Toast.LENGTH_SHORT).show();
+            return;
+        }
         Intent i = new Intent(a, ProfileActivity.class);
         i.putExtra(ProfileActivity.EXTRA_IS_OWN_PROFILE, false);
         i.putExtra(ProfileActivity.EXTRA_USER_ID, publicacion.getAuthorId());
         i.putExtra(ProfileActivity.EXTRA_USERNAME, publicacion.getAutor());
-        i.putExtra(ProfileActivity.EXTRA_BIO, "Bio del usuario (pendiente)");
         i.putExtra(ProfileActivity.EXTRA_AVATAR_LETTER,
                 (publicacion.getAutor() != null && !publicacion.getAutor().isEmpty())
                         ? publicacion.getAutor().substring(0, 1)
@@ -363,9 +366,30 @@ public class FeedController {
                         if (list == null || list.isEmpty()) {
                             fallback.fetchFeed(cb);
                         } else {
-                            cb.onSuccess(list);
+                            marcarEstadoUsuario(list, cb);
                         }
                     },
+                    cb::onError);
+        }
+
+        private void marcarEstadoUsuario(List<Publicacion> list, Callback cb) {
+            String uid = SessionManager.currentUid();
+            if (uid == null) {
+                cb.onSuccess(list);
+                return;
+            }
+
+            RecipeRepository.savedIds(uid,
+                    savedIds -> RecipeRepository.likedIds(uid,
+                            likedIds -> {
+                                for (Publicacion p : list) {
+                                    String id = p.getId();
+                                    p.setGuardada(id != null && savedIds.contains(id));
+                                    p.setLiked(id != null && likedIds.contains(id));
+                                }
+                                cb.onSuccess(list);
+                            },
+                            cb::onError),
                     cb::onError);
         }
     }

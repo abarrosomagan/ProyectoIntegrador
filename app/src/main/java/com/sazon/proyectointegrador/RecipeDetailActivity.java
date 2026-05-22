@@ -25,6 +25,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
     private String recipeId;
     private Publicacion receta;
     private boolean guardada = false;
+    private boolean liked = false;
 
     private TextView tvTitle, tvAuthor, tvAuthorAvatar, tvDate, tvDescription;
     private MaterialButton btnLike, btnSave, btnDelete, btnViewProfile;
@@ -45,6 +46,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
         bind();
         cargarReceta();
         cargarEstadoGuardado();
+        cargarEstadoLike();
     }
 
     private void bind() {
@@ -114,7 +116,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
         tvDescription.setText(desc == null || desc.isEmpty()
                 ? "(Sin descripción)" : desc);
 
-        btnLike.setText("❤ " + receta.getLikes());
+        pintarBotonLike();
 
         // El autor es quien la creó: muestra el botón Eliminar
         String meUid = SessionManager.currentUid();
@@ -141,17 +143,40 @@ public class RecipeDetailActivity extends AppCompatActivity {
         btnSave.setText(guardada ? "Guardada ⭐" : "Guardar");
     }
 
+    private void cargarEstadoLike() {
+        String uid = SessionManager.currentUid();
+        if (uid == null) return;
+        RecipeRepository.isLiked(recipeId, uid,
+                exists -> {
+                    liked = Boolean.TRUE.equals(exists);
+                    if (receta != null) receta.setLiked(liked);
+                    pintarBotonLike();
+                },
+                e -> { /* nada */ });
+    }
+
+    private void pintarBotonLike() {
+        if (btnLike == null || receta == null) return;
+        btnLike.setText((liked ? "♥ " : "♡ ") + receta.getLikes());
+    }
+
     // ===== Acciones =====
 
     private void darLike() {
         String uid = SessionManager.currentUid();
         if (uid == null || receta == null) return;
-        int n = receta.getLikes() + 1;
-        receta.setLikes(n);
-        btnLike.setText("❤ " + n);
-        RecipeRepository.toggleLike(recipeId, uid, true, null, e -> {
-            receta.setLikes(n - 1);
-            btnLike.setText("❤ " + (n - 1));
+        boolean nuevoLiked = !liked;
+        int likesAnteriores = receta.getLikes();
+        int nuevosLikes = Math.max(0, likesAnteriores + (nuevoLiked ? 1 : -1));
+        liked = nuevoLiked;
+        receta.setLiked(nuevoLiked);
+        receta.setLikes(nuevosLikes);
+        pintarBotonLike();
+        RecipeRepository.toggleLike(recipeId, uid, nuevoLiked, null, e -> {
+            liked = !nuevoLiked;
+            receta.setLiked(liked);
+            receta.setLikes(likesAnteriores);
+            pintarBotonLike();
         });
     }
 
