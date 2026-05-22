@@ -2,125 +2,191 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() {
-      return request.auth != null;
-    }
 
-    function isSelf(uid) {
-      return signedIn() && request.auth.uid == uid;
-    }
+    // ============== Helpers ==============
+    function signedIn() { return request.auth != null; }
+    function uid()      { return request.auth.uid; }
+    function isSelf(u)  { return signedIn() && uid() == u; }
 
     function chat(chatId) {
       return get(/databases/$(database)/documents/chats/$(chatId));
     }
-
     function isChatParticipant(chatId) {
-      return signedIn()
-        && request.auth.uid in chat(chatId).data.participants;
+      return signedIn() && uid() in chat(chatId).data.participants;
+    }
+    function recipe(recipeId) {
+      return get(/databases/$(database)/documents/recipes/$(recipeId));
     }
 
-    match /users/{uid} {
-      allow read: if signedIn();
-      allow create: if isSelf(uid);
-      allow update: if isSelf(uid)
-        || request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['followers', 'following', 'recipes']);
-      allow delete: if isSelf(uid);
+    // ============== Usuarios ==============
+    match /users/{u} {
+      allow read:   if signedIn();
+      allow create: if isSelf(u);
+      allow update: if isSelf(u)
+        || (signedIn() && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['followers', 'following', 'recipes']));
+      allow delete: if isSelf(u);
 
       match /followers/{followerUid} {
-        allow read: if signedIn();
-        allow create, delete: if signedIn() && request.auth.uid == followerUid;
+        allow read:           if signedIn();
+        allow create, delete: if signedIn() && uid() == followerUid;
+        allow update:         if false;
       }
-
       match /following/{followingUid} {
-        allow read: if signedIn();
-        allow create, delete: if isSelf(uid) && followingUid != uid;
+        allow read:           if signedIn();
+        allow create, delete: if isSelf(u) && followingUid != u;
+        allow update:         if false;
       }
 
-      match /saved/{recipeId} {
-        allow read, create, update, delete: if isSelf(uid);
-      }
-
-      match /liked/{recipeId} {
-        allow read, create, update, delete: if isSelf(uid);
-      }
+      match /saved/{recipeId} { allow read, write: if isSelf(u); }
+      match /liked/{recipeId} { allow read, write: if isSelf(u); }
 
       match /activity/{activityId} {
-        allow read, update, delete: if isSelf(uid);
+        allow read, update, delete: if isSelf(u);
         allow create: if signedIn()
-          && request.resource.data.actorId == request.auth.uid
-          && request.resource.data.type in ['like', 'save', 'comment', 'follow'];
+          && request.resource.data.actorId == uid()
+          && request.resource.data.type in
+              ['like', 'save', 'comment', 'follow', 'reply', 'mention'];
       }
+
+      match /settings/{docId}       { allow read, write: if isSelf(u); }
+      match /blocked/{otherUid}     { allow read, write: if isSelf(u); }
+      match /chatSettings/{chatId}  { allow read, write: if isSelf(u); }
+      match /tokens/{tokenId}       { allow read, write: if isSelf(u); }
     }
 
+    // ============== Recetas ==============
     match /recipes/{recipeId} {
       allow read: if signedIn();
+
       allow create: if signedIn()
-        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.authorId == uid()
         && request.resource.data.keys().hasAll([
-          'authorId', 'autor', 'titulo', 'descripcion', 'imageUrl', 'likes', 'createdAt'
+          'authorId', 'autor', 'titulo', 'descripcion',
+          'imageUrl', 'likes', 'createdAt'
         ]);
+
       allow update: if signedIn()
         && (
-          resource.data.authorId == request.auth.uid
-          || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
+          resource.data.authorId == uid()
+          || request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['likes', 'views', 'saves', 'comments'])
         );
-      allow delete: if signedIn()
-        && resource.data.authorId == request.auth.uid;
 
-      match /likes/{uid} {
-        allow read: if signedIn();
-        allow create, delete: if isSelf(uid);
+      allow delete: if signedIn() && resource.data.authorId == uid();
+
+      match /likes/{u} {
+        allow read:           if signedIn();
+        allow create, delete: if isSelf(u);
+        allow update:         if false;
+      }
+
+      match /views/{u} {
+        allow read:   if signedIn();
+        allow create: if isSelf(u);
+        allow update, delete: if false;
       }
 
       match /comments/{commentId} {
         allow read: if signedIn();
+
         allow create: if signedIn()
-          && request.resource.data.authorId == request.auth.uid
+          && request.resource.data.authorId == uid()
           && request.resource.data.text is string
           && request.resource.data.text.size() > 0
           && request.resource.data.text.size() <= 500;
-        allow update: if false;
+
+        allow update: if signedIn()
+          && (
+            (resource.data.authorId == uid()
+              && request.resource.data.diff(resource.data).affectedKeys()
+                  .hasOnly(['text', 'edited', 'editedAt', 'likes']))
+            || request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['likes'])
+          );
+
         allow delete: if signedIn()
-          && resource.data.authorId == request.auth.uid;
+          && (
+            resource.data.authorId == uid()
+            || recipe(recipeId).data.authorId == uid()
+          );
+
+        match /likes/{u} {
+          allow read:           if signedIn();
+          allow create, delete: if isSelf(u);
+          allow update:         if false;
+        }
       }
     }
 
+    // ============== Stories (24h) ==============
+    // El cliente filtra createdAt > now-24h al leer.
+    match /stories/{storyId} {
+      allow read:   if signedIn();
+      allow create: if signedIn() && request.resource.data.authorId == uid();
+      allow update, delete: if signedIn() && resource.data.authorId == uid();
+
+      match /views/{u} {
+        allow read:   if signedIn();
+        allow create: if isSelf(u);
+        allow update, delete: if false;
+      }
+    }
+
+    // ============== Chats ==============
     match /chats/{chatId} {
       allow read: if isChatParticipant(chatId);
+
       allow create: if signedIn()
-        && request.auth.uid in request.resource.data.participants
+        && uid() in request.resource.data.participants
         && request.resource.data.participants.size() == 2;
+
       allow update: if isChatParticipant(chatId)
         && request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly([
-            'lastMessage',
-            'lastSenderId',
-            'lastMessageAt',
-            'lastReadAt',
-            'presence',
-            'participantsNames'
+            'lastMessage', 'lastSenderId', 'lastMessageAt', 'lastReadAt',
+            'presence', 'participantsNames',
+            'typing', 'theme', 'pinned'
           ]);
+
       allow delete: if false;
 
       match /messages/{msgId} {
         allow read: if isChatParticipant(chatId);
+
         allow create: if isChatParticipant(chatId)
-          && request.resource.data.senderId == request.auth.uid
+          && request.resource.data.senderId == uid()
           && request.resource.data.text is string
           && request.resource.data.text.size() > 0
-          && request.resource.data.text.size() <= 1000;
+          && request.resource.data.text.size() <= 2000;
+
+        // Tres updates legítimos: read receipts, reactions, edición propia
         allow update: if isChatParticipant(chatId)
           && (
-            // Read receipts: el participante se mete a sí mismo en readBy
             (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy'])
-              && request.auth.uid in request.resource.data.readBy)
-            // Reacciones: cualquier participante puede tocar el map de reacciones
+              && uid() in request.resource.data.readBy)
             || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])
+            || (resource.data.senderId == uid()
+                && request.resource.data.diff(resource.data).affectedKeys()
+                    .hasOnly(['text', 'edited', 'editedAt']))
           );
+
         allow delete: if isChatParticipant(chatId)
-          && resource.data.senderId == request.auth.uid;
+          && resource.data.senderId == uid();
       }
+    }
+
+    // ============== Reportes ==============
+    match /reports/{reportId} {
+      allow create: if signedIn()
+        && request.resource.data.reporterId == uid();
+      allow read, update, delete: if signedIn()
+        && resource.data.reporterId == uid();
+    }
+
+    // ============== Cierre por defecto ==============
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
