@@ -3,11 +3,13 @@ package com.sazon.proyectointegrador.adapters;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.OvershootInterpolator;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.sazon.proyectointegrador.R;
@@ -62,6 +64,7 @@ public class PublicacionAdapter extends RecyclerView.Adapter<PublicacionAdapter.
         h.tvTiempo.setText(tiempo);
         h.tvTitulo.setText(titulo);
         h.tvLikes.setText((liked ? "♥ " : "♡ ") + likes);
+        pintarColorLike(h.tvLikes, liked);
 
         bindMeta(h, p);
 
@@ -97,11 +100,13 @@ public class PublicacionAdapter extends RecyclerView.Adapter<PublicacionAdapter.
             if (uid == null || recipeId == null || recipeId.isEmpty()) {
                 // Sin sesión o item demo sin id real → toggle solo visual
                 p.setGuardada(!p.isGuardada());
+                animateButtonPop(h.btnGuardar);
                 notifyItemChanged(h.getAdapterPosition());
                 return;
             }
             boolean nuevo = !p.isGuardada();
             p.setGuardada(nuevo);
+            animateButtonPop(h.btnGuardar);
             notifyItemChanged(h.getAdapterPosition());
             RecipeStateBus.publish(p, null, null, nuevo);
             RecipeRepository.toggleSaved(recipeId, uid, nuevo, unused -> {
@@ -130,6 +135,8 @@ public class PublicacionAdapter extends RecyclerView.Adapter<PublicacionAdapter.
             p.setLikes(nuevoLikes);
             RecipeStateBus.publish(p, nuevoLiked, nuevoLikes, null);
             h.tvLikes.setText((nuevoLiked ? "♥ " : "♡ ") + nuevoLikes);
+            pintarColorLike(h.tvLikes, nuevoLiked);
+            if (nuevoLiked) animateLikePulse(h.tvLikes);
             RecipeRepository.toggleLike(recipeId, uid, nuevoLiked, unused -> {
                 if (nuevoLiked) {
                     ActivityRepository.notifyRecipe(p.getAuthorId(),
@@ -141,6 +148,7 @@ public class PublicacionAdapter extends RecyclerView.Adapter<PublicacionAdapter.
                 p.setLikes(anteriorLikes);
                 RecipeStateBus.publish(p, !nuevoLiked, anteriorLikes, null);
                 h.tvLikes.setText((!nuevoLiked ? "♥ " : "♡ ") + anteriorLikes);
+                pintarColorLike(h.tvLikes, !nuevoLiked);
             });
         });
     }
@@ -204,6 +212,48 @@ public class PublicacionAdapter extends RecyclerView.Adapter<PublicacionAdapter.
 
     private static String safe(String s) {
         return s == null ? "" : s;
+    }
+
+    private static void pintarColorLike(TextView tv, boolean liked) {
+        if (tv == null) return;
+        int colorRes = liked ? R.color.color_like : R.color.texto_secundario;
+        tv.setTextColor(ContextCompat.getColor(tv.getContext(), colorRes));
+    }
+
+    /** Animación rebote tipo Instagram al dar like. */
+    private static void animateLikePulse(View v) {
+        if (v == null) return;
+        v.animate().cancel();
+        v.setScaleX(1f);
+        v.setScaleY(1f);
+        v.animate()
+                .scaleX(1.45f).scaleY(1.45f)
+                .setDuration(120)
+                .withEndAction(() -> v.animate()
+                        .scaleX(1f).scaleY(1f)
+                        .setDuration(180)
+                        .setInterpolator(new OvershootInterpolator(3f))
+                        .start())
+                .start();
+    }
+
+    /** Pulso suave del botón guardar. */
+    private static void animateButtonPop(View v) {
+        if (v == null) return;
+        v.animate().cancel();
+        v.setScaleX(1f);
+        v.setScaleY(1f);
+        v.animate()
+                .scaleX(1.25f).scaleY(1.25f)
+                .rotationBy(8f)
+                .setDuration(110)
+                .withEndAction(() -> v.animate()
+                        .scaleX(1f).scaleY(1f)
+                        .rotationBy(-8f)
+                        .setDuration(140)
+                        .setInterpolator(new OvershootInterpolator(2f))
+                        .start())
+                .start();
     }
 
     private static String currentActorName() {
