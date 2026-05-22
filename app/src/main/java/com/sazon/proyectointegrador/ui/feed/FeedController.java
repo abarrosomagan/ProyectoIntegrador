@@ -109,7 +109,7 @@ public class FeedController {
         }
 
         if (tvSaludo != null) tvSaludo.setText("Hola, " + nombre + "!");
-        // Avatar: de momento es icono fijo; cuando metáis Storage/URL, aquí lo cargáis con Glide.
+        // Avatar: de momento es icono fijo en el feed.
         if (imgAvatarFeed != null) {
             // placeholder ya está en xml
         }

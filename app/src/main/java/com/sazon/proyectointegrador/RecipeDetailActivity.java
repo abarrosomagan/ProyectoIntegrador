@@ -16,12 +16,12 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
-import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.sazon.proyectointegrador.adapters.RecipeCommentAdapter;
 import com.sazon.proyectointegrador.model.Publicacion;
 import com.sazon.proyectointegrador.model.RecipeComment;
+import com.sazon.proyectointegrador.util.RecipeImageHelper;
 import com.sazon.proyectointegrador.util.RecipeRepository;
 import com.sazon.proyectointegrador.util.SessionManager;
 
@@ -151,7 +151,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
         String imageUrl = receta.getImageUrl();
         if (recipeHero != null) {
             if (imageUrl != null && !imageUrl.trim().isEmpty()) {
-                Glide.with(this).load(imageUrl).centerCrop().into(recipeHero);
+                RecipeImageHelper.loadInto(recipeHero, imageUrl);
             } else {
                 recipeHero.setImageDrawable(null);
             }

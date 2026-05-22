@@ -19,8 +19,7 @@ import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
+import com.sazon.proyectointegrador.util.RecipeImageHelper;
 import com.sazon.proyectointegrador.util.RecipeRepository;
 import com.sazon.proyectointegrador.util.SessionManager;
 
@@ -106,35 +105,18 @@ public class CreateRecipeActivity extends AppCompatActivity {
                     : "Chef";
         }
 
-        publishWithImage(uid, authorName, title, desc);
-    }
-
-    private void publishWithImage(@NonNull String uid,
-                                  @NonNull String authorName,
-                                  @NonNull String title,
-                                  @NonNull String desc) {
-        if (selectedImageUri == null) {
-            createRecipe(uid, authorName, title, desc, "");
-            return;
+        String imageValue = "";
+        if (selectedImageUri != null) {
+            imageValue = RecipeImageHelper.toFirestoreImage(getContentResolver(), selectedImageUri);
+            if (imageValue == null) {
+                setLoading(false);
+                Toast.makeText(this, "La foto es demasiado grande para guardarla gratis",
+                        Toast.LENGTH_SHORT).show();
+                return;
+            }
         }
 
-        StorageReference ref = FirebaseStorage.getInstance()
-                .getReference("recipes/" + uid + "/" + System.currentTimeMillis() + ".jpg");
-
-        ref.putFile(selectedImageUri)
-                .addOnSuccessListener(task -> ref.getDownloadUrl()
-                        .addOnSuccessListener(uri ->
-                                createRecipe(uid, authorName, title, desc, uri.toString()))
-                        .addOnFailureListener(e -> {
-                            setLoading(false);
-                            Toast.makeText(this, "No se pudo obtener la URL de la foto",
-                                    Toast.LENGTH_SHORT).show();
-                        }))
-                .addOnFailureListener(e -> {
-                    setLoading(false);
-                    Toast.makeText(this, "No se pudo subir la foto",
-                            Toast.LENGTH_SHORT).show();
-                });
+        createRecipe(uid, authorName, title, desc, imageValue);
     }
 
     private void createRecipe(@NonNull String uid,

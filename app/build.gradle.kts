@@ -55,10 +55,9 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:31.5.0"))
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
-    implementation("com.google.firebase:firebase-storage")
     implementation("com.google.firebase:firebase-analytics")
 
-    // Glide para cargar imagenes de Storage / URL en ImageViews
+    // Glide para cargar imagenes remotas o embebidas en ImageViews
     implementation("com.github.bumptech.glide:glide:4.16.0")
 
     // (Opcional, para Google Sign-In más adelante)

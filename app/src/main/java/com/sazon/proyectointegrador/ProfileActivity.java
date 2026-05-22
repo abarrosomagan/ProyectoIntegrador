@@ -15,7 +15,6 @@ import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.bumptech.glide.Glide;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.button.MaterialButton;
 import com.sazon.proyectointegrador.adapters.PublicacionGridAdapter;
@@ -291,7 +290,7 @@ public class ProfileActivity extends AppCompatActivity {
         if (avatarUrl != null && !avatarUrl.isEmpty()) {
             ivAvatar.setVisibility(View.VISIBLE);
             tvAvatar.setVisibility(View.GONE);
-            Glide.with(this).load(avatarUrl).centerCrop().into(ivAvatar);
+            com.sazon.proyectointegrador.util.RecipeImageHelper.loadInto(ivAvatar, avatarUrl);
         } else {
             ivAvatar.setVisibility(View.GONE);
             tvAvatar.setVisibility(View.VISIBLE);

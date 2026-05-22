@@ -10,15 +10,12 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
-
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Picker de foto de perfil + subida a Firebase Storage en /avatars/{uid}.jpg
- * Tras subirla, escribe el avatarUrl en /users/{uid}.
+ * Picker de foto de perfil. Para mantener el proyecto en opciones gratuitas,
+ * comprime la imagen y guarda el resultado en /users/{uid}.avatarUrl.
  *
  * Uso:
  *   AvatarHelper helper = AvatarHelper.attach(activity, uri -> { ... });
@@ -48,7 +45,7 @@ public class AvatarHelper {
                         if (callback != null) callback.onResult(null);
                         return;
                     }
-                    uploadAvatar(uri);
+                    saveAvatar(uri);
                 });
     }
 
@@ -63,7 +60,7 @@ public class AvatarHelper {
                 .build());
     }
 
-    private void uploadAvatar(@NonNull Uri uri) {
+    private void saveAvatar(@NonNull Uri uri) {
         String uid = SessionManager.currentUid();
         if (uid == null) {
             Toast.makeText(activity, "Sesión expirada", Toast.LENGTH_SHORT).show();
@@ -71,36 +68,25 @@ public class AvatarHelper {
             return;
         }
 
-        StorageReference ref = FirebaseStorage.getInstance()
-                .getReference("avatars/" + uid + ".jpg");
+        String imageValue = RecipeImageHelper.toFirestoreImage(
+                activity.getContentResolver(), uri);
+        if (imageValue == null) {
+            Toast.makeText(activity, "La foto es demasiado grande",
+                    Toast.LENGTH_SHORT).show();
+            if (callback != null) callback.onResult(null);
+            return;
+        }
 
-        Toast.makeText(activity, "Subiendo foto...", Toast.LENGTH_SHORT).show();
-
-        ref.putFile(uri)
-                .addOnSuccessListener(task -> ref.getDownloadUrl()
-                        .addOnSuccessListener(downloadUri -> {
-                            String url = downloadUri.toString();
-                            // Guardamos la url en el doc del usuario
-                            Map<String, Object> updates = new HashMap<>();
-                            updates.put("avatarUrl", url);
-                            SessionManager.updateUserDoc(uid, updates,
-                                    ok -> {
-                                        if (callback != null) callback.onResult(url);
-                                    },
-                                    err -> {
-                                        Toast.makeText(activity,
-                                                "Subida ok pero no se guardó en el perfil",
-                                                Toast.LENGTH_SHORT).show();
-                                        if (callback != null) callback.onResult(url);
-                                    });
-                        })
-                        .addOnFailureListener(e -> {
-                            Toast.makeText(activity, "No se pudo obtener la URL",
-                                    Toast.LENGTH_SHORT).show();
-                            if (callback != null) callback.onResult(null);
-                        }))
-                .addOnFailureListener(e -> {
-                    Toast.makeText(activity, "Error subiendo la foto",
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("avatarUrl", imageValue);
+        SessionManager.updateUserDoc(uid, updates,
+                ok -> {
+                    Toast.makeText(activity, "Foto de perfil actualizada",
+                            Toast.LENGTH_SHORT).show();
+                    if (callback != null) callback.onResult(imageValue);
+                },
+                err -> {
+                    Toast.makeText(activity, "No se pudo guardar la foto",
                             Toast.LENGTH_SHORT).show();
                     if (callback != null) callback.onResult(null);
                 });

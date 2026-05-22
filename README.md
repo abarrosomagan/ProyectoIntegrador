@@ -48,11 +48,11 @@ El proyecto ya tiene implementado el flujo principal de una red social de receta
 - **Recuperación de contraseña** por correo.
 - **Registro** con creación de usuario y perfil base en Firestore.
 - **Feed de recetas** alimentado desde Firestore, con buscador y pull-to-refresh.
-- **Creación de recetas** desde la app, con subida opcional de foto a Firebase Storage.
+- **Creación de recetas** desde la app, con foto opcional comprimida y guardada en Firestore.
 - **Detalle de receta** con acciones de like, guardar, comentar, compartir, eliminar y acceso al perfil del autor.
 - **Comentarios en recetas** en tiempo real mediante subcolecciones de Firestore.
 - **Likes y guardados persistentes** en Firestore, con estado por usuario en feed y detalle.
-- **Perfil propio** con foto de perfil en Firebase Storage, nombre, biografía, contadores y pestañas de recetas propias y guardadas.
+- **Perfil propio** con foto comprimida guardada en Firestore, nombre, biografía, contadores y pestañas de recetas propias y guardadas.
 - **Perfil ajeno** con carga de datos reales y botón de seguir o dejar de seguir.
 - **Sistema de seguimiento** con contadores de seguidores y siguiendo.
 - **Chats en tiempo real** con Firestore, lista de conversaciones y búsqueda de usuarios por correo.
@@ -132,18 +132,21 @@ app/src/main/java/com/sazon/proyectointegrador/
  │    ├── ChatThreadAdapter
  │    ├── ChatMessageAdapter
  │    ├── PublicacionAdapter
- │    └── PublicacionGridAdapter
+ │    ├── PublicacionGridAdapter
+ │    └── RecipeCommentAdapter
  ├── model/
  │    ├── Publicacion
  │    ├── ChatThread
  │    ├── ChatMessage
  │    ├── ChatItem
- │    └── ChatDateHeader
+ │    ├── ChatDateHeader
+ │    └── RecipeComment
  └── util/
       ├── SessionManager
       ├── RecipeRepository
       ├── FollowRepository
       ├── AvatarHelper
+      ├── RecipeImageHelper
       ├── DemoData
       └── SimpleTextWatcher
 ```
@@ -166,6 +169,8 @@ users/{uid}/saved/{recipeId}
 recipes/{recipeId}
   authorId, autor, titulo, descripcion, imageUrl, likes, createdAt
 
+imageUrl guarda una URL antigua o una imagen JPEG comprimida en formato data URL.
+
 recipes/{recipeId}/likes/{uid}
 recipes/{recipeId}/comments/{commentId}
   recipeId, authorId, authorName, text, createdAt
@@ -179,22 +184,12 @@ chats/{chatId}/messages/{msgId}
   text, senderId, createdAt, readAt
 ```
 
-### Storage
-
-```text
-avatars/{uid}.jpg
-recipes/{uid}/{timestamp}.jpg
-```
-
----
-
 ## Tecnologías
 
 - Java
 - Android SDK
 - Firebase Auth
 - Cloud Firestore
-- Firebase Storage
 - Firebase Analytics
 - Material Design 3
 - AndroidX
@@ -217,8 +212,7 @@ git clone https://github.com/abarrosomagan/ProyectoIntegrador.git
 4. Configurar Firebase para el proyecto correspondiente.
 5. Habilitar Authentication con email y contraseña.
 6. Habilitar Firestore Database.
-7. Habilitar Cloud Storage.
-8. Ejecutar la app desde Android Studio.
+7. Ejecutar la app desde Android Studio.
 
 ---
 
@@ -272,29 +266,6 @@ service cloud.firestore {
   }
 }
 ```
-
----
-
-## Reglas mínimas de Storage para desarrollo
-
-```js
-rules_version = '2';
-service firebase.storage {
-  match /b/{bucket}/o {
-    match /avatars/{uid}.jpg {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == uid;
-    }
-
-    match /recipes/{uid}/{fileName} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == uid;
-    }
-  }
-}
-```
-
----
 
 ## Roadmap
 

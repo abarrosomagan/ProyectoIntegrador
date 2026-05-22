@@ -17,7 +17,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
-import com.bumptech.glide.Glide;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -332,10 +331,7 @@ public class ProfileController {
         if (avatarUrl != null && !avatarUrl.isEmpty()) {
             ivAvatar.setVisibility(View.VISIBLE);
             tvAvatar.setVisibility(View.GONE);
-            Glide.with(a)
-                    .load(avatarUrl)
-                    .centerCrop()
-                    .into(ivAvatar);
+            com.sazon.proyectointegrador.util.RecipeImageHelper.loadInto(ivAvatar, avatarUrl);
         } else {
             ivAvatar.setVisibility(View.GONE);
             tvAvatar.setVisibility(View.VISIBLE);

@@ -9,9 +9,9 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.bumptech.glide.Glide;
 import com.sazon.proyectointegrador.R;
 import com.sazon.proyectointegrador.model.Publicacion;
+import com.sazon.proyectointegrador.util.RecipeImageHelper;
 
 import java.util.ArrayList;
 
@@ -49,10 +49,7 @@ public class PublicacionGridAdapter extends RecyclerView.Adapter<PublicacionGrid
         String imageUrl = p.getImageUrl();
         if (imageUrl != null && !imageUrl.trim().isEmpty()) {
             h.imgRecipe.setVisibility(View.VISIBLE);
-            Glide.with(h.imgRecipe.getContext())
-                    .load(imageUrl)
-                    .centerCrop()
-                    .into(h.imgRecipe);
+            RecipeImageHelper.loadInto(h.imgRecipe, imageUrl);
         } else {
             h.imgRecipe.setVisibility(View.GONE);
             h.imgRecipe.setImageDrawable(null);
