@@ -111,8 +111,13 @@ service cloud.firestore {
           && request.resource.data.text.size() > 0
           && request.resource.data.text.size() <= 1000;
         allow update: if isChatParticipant(chatId)
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy'])
-          && request.auth.uid in request.resource.data.readBy;
+          && (
+            // Read receipts: el participante se mete a sí mismo en readBy
+            (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy'])
+              && request.auth.uid in request.resource.data.readBy)
+            // Reacciones: cualquier participante puede tocar el map de reacciones
+            || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])
+          );
         allow delete: if isChatParticipant(chatId)
           && resource.data.senderId == request.auth.uid;
       }

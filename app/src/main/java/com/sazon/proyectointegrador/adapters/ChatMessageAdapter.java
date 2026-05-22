@@ -3,6 +3,7 @@ package com.sazon.proyectointegrador.adapters;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,21 +28,25 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Adapter del chat con dos tipos de vista:
- *   - TYPE_HEADER  → chip flotante con la fecha ("Hoy", "Ayer", "12 may")
- *   - TYPE_MESSAGE → burbuja asimétrica con texto, hora y check de leído
- *
- * Las burbujas de "yo" llevan tail abajo a la derecha y color naranja;
- * las del otro, tail abajo a la izquierda y fondo crema con borde.
- * Mensajes consecutivos del mismo emisor se agrupan visualmente (menos padding).
+ *   - TYPE_HEADER  → chip flotante con la fecha
+ *   - TYPE_MESSAGE → burbuja asimétrica con texto, hora, check de leído y reacciones
  */
 public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     public interface OnDeleteMessage {
         void onDelete(@NonNull String docId);
     }
+
+    public interface OnReactionToggle {
+        void onReact(@NonNull String docId, @NonNull String emoji, boolean nowReacting);
+    }
+
+    /** Emojis que se ofrecen en el menú de reacciones. */
+    static final String[] EMOJI_OPTIONS = { "❤", "😂", "😮", "🔥", "👏" };
 
     private static final int TYPE_MESSAGE = 0;
     private static final int TYPE_HEADER  = 1;
@@ -51,6 +56,8 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
 
     private final List<ChatItem> data;
     private OnDeleteMessage deleteListener;
+    private OnReactionToggle reactionListener;
+    private String myUid;
 
     public ChatMessageAdapter(List<ChatItem> data) {
         this.data = data;
@@ -58,6 +65,14 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
 
     public void setOnDeleteMessage(OnDeleteMessage listener) {
         this.deleteListener = listener;
+    }
+
+    public void setOnReactionToggle(OnReactionToggle listener) {
+        this.reactionListener = listener;
+    }
+
+    public void setMyUid(String uid) {
+        this.myUid = uid;
     }
 
     @Override
@@ -83,7 +98,6 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         if (holder instanceof HeaderVH && item instanceof ChatDateHeader) {
             ((HeaderVH) holder).bind((ChatDateHeader) item);
         } else if (holder instanceof MessageVH && item instanceof ChatMessage) {
-            // ¿el mensaje anterior es del mismo emisor? → consecutivo
             boolean consecutivo = false;
             if (position > 0) {
                 ChatItem prev = data.get(position - 1);
@@ -91,7 +105,8 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
                     consecutivo = ((ChatMessage) prev).isMine() == ((ChatMessage) item).isMine();
                 }
             }
-            ((MessageVH) holder).bind((ChatMessage) item, consecutivo, deleteListener);
+            ((MessageVH) holder).bind((ChatMessage) item, consecutivo,
+                    deleteListener, reactionListener, myUid);
         }
     }
 
@@ -126,6 +141,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         final TextView tvMsg;
         final TextView tvTime;
         final ImageView ivCheck;
+        final LinearLayout reactionsRow;
 
         MessageVH(@NonNull View itemView) {
             super(itemView);
@@ -134,39 +150,47 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
             tvMsg = itemView.findViewById(R.id.tvMsg);
             tvTime = itemView.findViewById(R.id.tvTime);
             ivCheck = itemView.findViewById(R.id.ivCheck);
+            reactionsRow = itemView.findViewById(R.id.reactionsRow);
         }
 
-        void bind(ChatMessage m, boolean consecutivo, OnDeleteMessage deleteListener) {
+        void bind(ChatMessage m, boolean consecutivo,
+                  OnDeleteMessage deleteListener,
+                  OnReactionToggle reactionListener,
+                  String myUid) {
+
             Context ctx = root.getContext();
             tvMsg.setText(m.getText());
             tvTime.setText(TIME_FMT.format(new Date(m.getCreatedAt())));
 
-            // Padding vertical reducido si el mensaje anterior es del mismo emisor
             int topPx = (int) ((consecutivo ? 1 : 3) * ctx.getResources().getDisplayMetrics().density);
             root.setPadding(root.getPaddingLeft(), topPx,
                     root.getPaddingRight(), root.getPaddingBottom());
 
-            // Alineación + fondo + colores según remitente
+            // Alineación
             ConstraintSet set = new ConstraintSet();
             set.clone(root);
             set.clear(R.id.bubble, ConstraintSet.START);
             set.clear(R.id.bubble, ConstraintSet.END);
+            set.clear(R.id.reactionsRow, ConstraintSet.START);
+            set.clear(R.id.reactionsRow, ConstraintSet.END);
 
             if (m.isMine()) {
                 set.connect(R.id.bubble, ConstraintSet.END,
+                        ConstraintSet.PARENT_ID, ConstraintSet.END);
+                set.connect(R.id.reactionsRow, ConstraintSet.END,
                         ConstraintSet.PARENT_ID, ConstraintSet.END);
                 bubble.setBackground(ContextCompat.getDrawable(ctx, R.drawable.bg_bubble_mine));
                 tvMsg.setTextColor(ContextCompat.getColor(ctx, R.color.texto_sobre_principal));
                 tvTime.setTextColor(ContextCompat.getColor(ctx, R.color.texto_sobre_principal));
                 tvTime.setAlpha(0.75f);
-
-                // Check de leído solo en mis mensajes
                 ivCheck.setVisibility(View.VISIBLE);
                 ivCheck.setImageResource(m.isReadByOther()
                         ? R.drawable.ic_check_double : R.drawable.ic_check);
                 ivCheck.setAlpha(m.isReadByOther() ? 1f : 0.75f);
             } else {
                 set.connect(R.id.bubble, ConstraintSet.START,
+                        ConstraintSet.PARENT_ID, ConstraintSet.START);
+                set.connect(R.id.reactionsRow, ConstraintSet.START,
                         ConstraintSet.PARENT_ID, ConstraintSet.START);
                 bubble.setBackground(ContextCompat.getDrawable(ctx, R.drawable.bg_bubble_other));
                 tvMsg.setTextColor(ContextCompat.getColor(ctx, R.color.texto_principal));
@@ -177,33 +201,112 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
 
             set.applyTo(root);
 
-            // Long-press → menú Copiar / Eliminar (Eliminar solo en los míos)
+            // Reacciones
+            pintarReacciones(ctx, m, myUid, reactionListener);
+
+            // Long-press → menú reacciones + copiar + eliminar
             bubble.setOnLongClickListener(v -> {
-                mostrarMenuMensaje(ctx, m, deleteListener);
+                mostrarMenuMensaje(ctx, m, deleteListener, reactionListener, myUid);
                 return true;
             });
         }
 
-        private void mostrarMenuMensaje(Context ctx, ChatMessage m, OnDeleteMessage del) {
-            boolean puedeBorrar = m.isMine() && m.getDocId() != null && del != null;
-            String[] opciones = puedeBorrar
-                    ? new String[]{ "Copiar", "Eliminar" }
-                    : new String[]{ "Copiar" };
+        private void pintarReacciones(Context ctx, ChatMessage m, String myUid,
+                                      OnReactionToggle listener) {
+            if (reactionsRow == null) return;
+            reactionsRow.removeAllViews();
+
+            Map<String, List<String>> reactions = m.getReactions();
+            boolean tieneAlguna = false;
+            if (reactions != null) {
+                for (Map.Entry<String, List<String>> entry : reactions.entrySet()) {
+                    List<String> uids = entry.getValue();
+                    if (uids == null || uids.isEmpty()) continue;
+                    tieneAlguna = true;
+
+                    boolean meReaccion = myUid != null && uids.contains(myUid);
+                    TextView chip = new TextView(ctx);
+                    chip.setText(entry.getKey() + " " + uids.size());
+                    chip.setTextSize(11f);
+                    chip.setTextColor(ContextCompat.getColor(ctx,
+                            meReaccion ? R.color.color_principal_variante : R.color.texto_principal));
+                    int hPad = (int) (8 * ctx.getResources().getDisplayMetrics().density);
+                    int vPad = (int) (3 * ctx.getResources().getDisplayMetrics().density);
+                    chip.setPadding(hPad, vPad, hPad, vPad);
+                    chip.setBackgroundResource(meReaccion
+                            ? R.drawable.bg_reaction_chip_mine
+                            : R.drawable.bg_reaction_chip);
+                    chip.setGravity(Gravity.CENTER_VERTICAL);
+
+                    LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT);
+                    int margin = (int) (4 * ctx.getResources().getDisplayMetrics().density);
+                    lp.setMargins(0, 0, margin, 0);
+                    chip.setLayoutParams(lp);
+
+                    final String emoji = entry.getKey();
+                    chip.setOnClickListener(v -> {
+                        if (listener == null || m.getDocId() == null) return;
+                        listener.onReact(m.getDocId(), emoji, !meReaccion);
+                    });
+
+                    reactionsRow.addView(chip);
+                }
+            }
+            reactionsRow.setVisibility(tieneAlguna ? View.VISIBLE : View.GONE);
+        }
+
+        private void mostrarMenuMensaje(Context ctx, ChatMessage m,
+                                        OnDeleteMessage delete,
+                                        OnReactionToggle reactionListener,
+                                        String myUid) {
+            boolean puedeBorrar = m.isMine() && m.getDocId() != null && delete != null;
+            boolean puedeReaccionar = m.getDocId() != null && reactionListener != null;
+
+            int numActions = (puedeReaccionar ? 1 : 0) + 1 /* copiar */ + (puedeBorrar ? 1 : 0);
+            String[] opciones = new String[numActions];
+            int idx = 0;
+            if (puedeReaccionar) opciones[idx++] = "Reaccionar…";
+            opciones[idx++] = "Copiar";
+            if (puedeBorrar) opciones[idx] = "Eliminar";
+
+            final int idxReaccionar = puedeReaccionar ? 0 : -1;
+            final int idxCopiar = puedeReaccionar ? 1 : 0;
+            final int idxEliminar = puedeBorrar ? opciones.length - 1 : -1;
 
             new AlertDialog.Builder(ctx)
                     .setItems(opciones, (d, which) -> {
-                        if (which == 0) {
-                            ClipboardManager cm = (ClipboardManager)
-                                    ctx.getSystemService(Context.CLIPBOARD_SERVICE);
-                            if (cm != null) {
-                                cm.setPrimaryClip(ClipData.newPlainText("mensaje", m.getText()));
-                                Toast.makeText(ctx, "Copiado", Toast.LENGTH_SHORT).show();
-                            }
-                        } else if (which == 1 && puedeBorrar) {
-                            del.onDelete(m.getDocId());
+                        if (which == idxReaccionar) {
+                            elegirReaccion(ctx, m, reactionListener, myUid);
+                        } else if (which == idxCopiar) {
+                            copiarAlPortapapeles(ctx, m.getText());
+                        } else if (which == idxEliminar) {
+                            delete.onDelete(m.getDocId());
                         }
                     })
                     .show();
+        }
+
+        private void elegirReaccion(Context ctx, ChatMessage m,
+                                    OnReactionToggle listener, String myUid) {
+            new AlertDialog.Builder(ctx)
+                    .setTitle("Tu reacción")
+                    .setItems(EMOJI_OPTIONS, (d, which) -> {
+                        if (listener == null || m.getDocId() == null) return;
+                        String emoji = EMOJI_OPTIONS[which];
+                        boolean meReaccion = m.reactedByMe(emoji, myUid);
+                        listener.onReact(m.getDocId(), emoji, !meReaccion);
+                    })
+                    .show();
+        }
+
+        private static void copiarAlPortapapeles(Context ctx, String text) {
+            ClipboardManager cm = (ClipboardManager) ctx.getSystemService(Context.CLIPBOARD_SERVICE);
+            if (cm != null) {
+                cm.setPrimaryClip(ClipData.newPlainText("mensaje", text));
+                Toast.makeText(ctx, "Copiado", Toast.LENGTH_SHORT).show();
+            }
         }
     }
 }
