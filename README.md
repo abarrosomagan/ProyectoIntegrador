@@ -1,33 +1,20 @@
 # Sazón
 
-Sazón es un **proyecto académico en desarrollo** que consiste en una aplicación móvil Android orientada a la **gestión, publicación y descubrimiento de recetas**, incorporando un componente social mediante un feed visual, perfiles de usuario, sistema de guardados y mensajería.
+Sazón es una aplicación Android para personas aficionadas a la cocina que quieren publicar recetas, descubrir platos de otros usuarios, guardar ideas, seguir perfiles y conversar dentro de una comunidad gastronómica.
 
-El proyecto se desarrolla de forma progresiva y se irá **actualizando poco a poco**, tanto a nivel de diseño como de implementación, siguiendo un flujo de trabajo incremental.
+El proyecto forma parte del **Proyecto Integrador** del ciclo de **Desarrollo de Aplicaciones Multiplataforma (DAM)** y se desarrolla de forma incremental, con Firebase como base de autenticación, datos en tiempo real y almacenamiento.
 
 ---
 
 ## Diseño en Figma
 
-El diseño completo de la aplicación ha sido realizado en Figma y sirve como referencia visual y funcional para la implementación del proyecto.
+El diseño de la aplicación se ha realizado en Figma y sirve como referencia visual para la implementación en Android.
 
 https://www.figma.com/design/yHjedo6Y4G4Co4WEa7LY2A/Sin-t%C3%ADtulo?node-id=0-1&p=f&t=fkQQFC4GstUwoPPk-0
 
 ---
 
-## Contexto del proyecto
-
-Este proyecto forma parte del **Proyecto Integrador** del ciclo formativo de **Desarrollo de Aplicaciones Multiplataforma (DAM)**.
-
-El objetivo es aplicar de manera práctica y conjunta conocimientos de:
-- Diseño de interfaces
-- Programación Android
-- Organización y planificación de proyectos
-- Control de versiones con Git
-- Trabajo colaborativo
-
----
-
-## Autores y roles
+## Autores
 
 **Alejandro Barroso**  
 Developer y organizador del repositorio
@@ -41,7 +28,7 @@ Ambos autores participan en el diseño, la planificación y el desarrollo técni
 
 ## Cuentas de prueba
 
-Para revisar la app sin tener que registrarse, hay tres cuentas de demostración cargadas en Firebase Authentication. **Son cuentas de prueba con datos ficticios**, no contienen información real:
+Para revisar la app sin registrarse hay cuentas de demostración en Firebase Authentication. Son cuentas de prueba con datos ficticios:
 
 | Correo | Contraseña |
 |---|---|
@@ -49,137 +36,129 @@ Para revisar la app sin tener que registrarse, hay tres cuentas de demostración
 | `fer2@test.com` | `123456` |
 | `test1@sazon.com` | `123456` |
 
-> Pareja recomendada para probar el chat en dos dispositivos a la vez: `fer1@test.com` ↔ `fer2@test.com`. Las usamos para enseñar mensajes en tiempo real, separadores de fecha y *read receipts*.
+Pareja recomendada para probar el chat en dos dispositivos: `fer1@test.com` y `fer2@test.com`.
 
 ---
 
 ## Estado actual
 
-El proyecto se encuentra en una fase avanzada con la mayor parte del flujo principal funcional sobre Firebase. A día de hoy ya están implementados de forma real:
+El proyecto ya tiene implementado el flujo principal de una red social de recetas:
 
-- **Autenticación** con Firebase Auth (email/contraseña), persistencia de sesión y recuperación de contraseña por correo.
-- **Perfil real**: nombre, biografía, **foto de perfil** (Firebase Storage), rango de chef calculado a partir del número de recetas y contadores reales de seguidores y siguiendo.
-- **Recetas reales**: creación desde la app (pantalla *Nueva receta*) y persistencia en Firestore. Cada receta tiene autor, título, descripción, likes y fecha.
-- **Feed real** alimentado desde Firestore con buscador, *pull-to-refresh* y fallback a contenido demo cuando aún no hay recetas reales.
-- **Likes y guardados persistentes**: cada toque sobre el corazón o la estrella se guarda en Firestore en `recipes/{id}/likes/{uid}` y `users/{uid}/saved/{recipeId}`.
-- **Sistema de seguimiento** con `FollowRepository`: botón *Seguir / Siguiendo* sobre los perfiles ajenos y actualización transaccional de contadores en ambos usuarios.
-- **Mensajería en tiempo real** con Firestore: listado de conversaciones, mensajes con separadores de fecha, burbujas asimétricas y diálogo *Nueva conversación* buscando por correo.
-- **Perfil ajeno** (`ProfileActivity`): carga datos reales del usuario al pinchar sobre el autor de una receta.
-- **Navegación inferior** con indicador *pill* estilo Material 3 y **FAB** flotante para crear receta.
-
-Quedan elementos no implementados todavía (documentados al final del README).
+- **Autenticación** con Firebase Auth mediante email y contraseña.
+- **Recuperación de contraseña** por correo.
+- **Registro** con creación de usuario y perfil base en Firestore.
+- **Feed de recetas** alimentado desde Firestore, con buscador y pull-to-refresh.
+- **Creación de recetas** desde la app y guardado en Firestore.
+- **Detalle de receta** con acciones de like, guardar, compartir, eliminar y acceso al perfil del autor.
+- **Likes y guardados persistentes** en Firestore.
+- **Perfil propio** con foto de perfil en Firebase Storage, nombre, biografía, contadores y pestañas de recetas propias y guardadas.
+- **Perfil ajeno** con carga de datos reales y botón de seguir o dejar de seguir.
+- **Sistema de seguimiento** con contadores de seguidores y siguiendo.
+- **Chats en tiempo real** con Firestore, lista de conversaciones y búsqueda de usuarios por correo.
+- **Mensajes** con burbujas diferenciadas, separadores de fecha, hora y lectura básica.
+- **Modo demo** para mostrar contenido cuando todavía no hay datos reales.
 
 ---
 
-## Diseño de la aplicación (Figma)
+## Funcionalidades pendientes
 
-El diseño de la aplicación ha sido realizado previamente en **Figma**, y constituye la referencia principal para la implementación en Android.
+Los siguientes puntos siguen abiertos para completar la experiencia final:
 
-El diseño define:
-- Tema claro con paleta cromática cálida
-- Jerarquía visual clara y consistente
-- Espaciados homogéneos
-- Componentes reutilizables
-- Resolución base de diseño: **720 × 1280**
+- Subida de foto al crear una receta.
+- Comentarios en el detalle de receta.
+- Estado real de likes por usuario en el feed.
+- Listas navegables de seguidores y siguiendo.
+- Recorte de imagen de avatar.
+- Indicador de escribiendo y presencia en línea en el chat.
+- Notificaciones push.
+- Pantalla de ajustes completa.
+- Login con Google.
+- Revisión de reglas de Firebase para un entorno de producción.
 
-### Pantallas diseñadas
+---
 
-A continuación se muestran las principales pantallas diseñadas en Figma, que definen el flujo de navegación y la estructura visual de la aplicación.
+## Pantallas diseñadas
 
-#### Pantalla de inicio (splash)
+El diseño cubre las principales pantallas de navegación de la app.
+
+### Pantalla de inicio
+
 ![Pantalla de inicio](images/splash.png)
 
-#### Registro de usuario
+### Registro
+
 ![Registro de usuario](images/register.png)
 
-#### Inicio de sesión
+### Inicio de sesión
+
 ![Inicio de sesión](images/login.png)
 
-#### Feed principal de recetas
+### Feed principal
+
 ![Feed principal](images/feed.png)
 
-#### Perfil de usuario
+### Perfil
+
 ![Perfil de usuario](images/profile.png)
 
-#### Mensajes
+### Mensajes
+
 ![Mensajes](images/messages.png)
 
-#### Recetas guardadas
+### Recetas guardadas
+
 ![Recetas guardadas](images/saved.png)
 
-El diseño cubre el flujo completo de navegación principal de la aplicación, desde la pantalla de inicio hasta la interacción social y la gestión de contenido por parte del usuario.
-
 ---
 
+## Arquitectura
 
-## Funcionalidades
+La aplicación usa una arquitectura ligera basada en **Activities**, **Controllers**, **Adapters**, modelos y repositorios auxiliares.
 
-### Implementadas
-
-- **Splash** con redirección automática a Main si la sesión Firebase está vigente.
-- **Login** real (Firebase Auth) con mensajes de error en castellano y recuperar contraseña por email.
-- **Registro** con creación del documento de usuario en Firestore + `displayName` en Auth.
-- **Feed** desde Firestore con buscador, *pull-to-refresh* y avatar del usuario logueado en la cabecera.
-- **Perfil propio** con avatar editable (Storage), nombre y bio editables, contadores reales de recetas/seguidores/siguiendo, rango de chef calculado, tabs con icono (Mis recetas / Guardadas) y header colapsable por *drag*.
-- **Perfil ajeno** con datos reales y botón *Seguir / Siguiendo* con transacción que actualiza contadores en ambos usuarios.
-- **Mensajería**: lista de conversaciones en tiempo real, *Nueva conversación* por email, mensajes con burbujas asimétricas, separadores de fecha, hora dentro de cada burbuja y avatar del otro usuario en la cabecera.
-- **Crear receta** desde la app y persistencia en Firestore (sin foto de receta todavía).
-- **Likes y guardados** persistentes con transacciones de Firestore.
-- **Navegación inferior** estilo Material 3 con indicador *pill*.
-- **Modo demo**: cuando aún no hay datos reales, la app muestra chats y recetas de muestra para que la interfaz no parezca vacía.
-
-### Pendientes
-
-- Foto de receta (subida a Storage).
-- Pantalla de detalle de receta + comentarios.
-- Recorte / *crop* de imagen de avatar.
-- Listas de seguidores y siguiendo (ahora sólo contadores).
-- Notificaciones push (FCM).
-- *Read receipts*, indicador de *escribiendo* y presencia en línea en el chat (Realtime DB).
-- Login con Google (botón presente pero deshabilitado).
-
----
-
-## Arquitectura y estructura
-
-La aplicación sigue una arquitectura ligera basada en **Activities + Controllers** para mantener `MainActivity` limpio.
-
-```
+```text
 app/src/main/java/com/sazon/proyectointegrador/
- ├── SplashActivity                  → ruta inicial según sesión
- ├── LoginActivity / RegisterActivity → auth con Firebase
- ├── MainActivity                    → host de las 3 pestañas
- ├── ChatActivity                    → conversación 1-a-1 en tiempo real
- ├── ProfileActivity                 → perfil ajeno
- ├── CreateRecipeActivity            → crear nueva receta
+ ├── SplashActivity
+ ├── LoginActivity
+ ├── RegisterActivity
+ ├── MainActivity
+ ├── ChatActivity
+ ├── ProfileActivity
+ ├── CreateRecipeActivity
+ ├── RecipeDetailActivity
  ├── ui/
- │    ├── feed/FeedController        → feed + buscador + refresh
- │    ├── chats/ChatsController      → lista de conversaciones
- │    └── profile/ProfileController  → pestaña Perfil dentro del Main
+ │    ├── feed/FeedController
+ │    ├── chats/ChatsController
+ │    └── profile/ProfileController
  ├── adapters/
- │    ├── ChatThreadAdapter          → ítems de lista de chats
- │    ├── ChatMessageAdapter         → burbujas + separadores de fecha
- │    ├── PublicacionAdapter         → cards del feed con likes/guardados
- │    └── PublicacionGridAdapter     → grid 3 columnas del perfil
+ │    ├── ChatThreadAdapter
+ │    ├── ChatMessageAdapter
+ │    ├── PublicacionAdapter
+ │    └── PublicacionGridAdapter
  ├── model/
- │    ├── Publicacion                → receta
- │    ├── ChatThread / ChatMessage   → conversación + mensaje
- │    ├── ChatItem / ChatDateHeader  → unión + cabecera de fecha
+ │    ├── Publicacion
+ │    ├── ChatThread
+ │    ├── ChatMessage
+ │    ├── ChatItem
+ │    └── ChatDateHeader
  └── util/
-      ├── SessionManager             → wrappers de FirebaseAuth y Firestore
-      ├── RecipeRepository           → CRUD de recetas + likes + guardados
-      ├── FollowRepository           → seguir / dejar de seguir
-      ├── AvatarHelper               → picker + subida a Storage
-      ├── DemoData                   → datos de muestra para chats/recetas
-      └── SimpleTextWatcher          → TextWatcher abstracto
+      ├── SessionManager
+      ├── RecipeRepository
+      ├── FollowRepository
+      ├── AvatarHelper
+      ├── DemoData
+      └── SimpleTextWatcher
 ```
 
-### Modelo de datos en Firestore
+---
 
-```
+## Modelo de datos
+
+### Firestore
+
+```text
 users/{uid}
   uid, name, email, bio, avatarUrl, createdAt
-  followers (number), following (number), recipes (number)
+  followers, following, recipes
 
 users/{uid}/followers/{followerUid}
 users/{uid}/following/{followingUid}
@@ -190,55 +169,58 @@ recipes/{recipeId}
 
 recipes/{recipeId}/likes/{uid}
 
-chats/{chatId}                       chatId = "uidA_uidB" ordenado
-  participants: [uidA, uidB]
-  participantsNames: { uidA: nameA, uidB: nameB }
+chats/{chatId}
+  participants
+  participantsNames
   lastMessage, lastSenderId, lastMessageAt
 
 chats/{chatId}/messages/{msgId}
-  text, senderId, createdAt
+  text, senderId, createdAt, readAt
 ```
 
 ### Storage
 
-```
+```text
 avatars/{uid}.jpg
 ```
 
 ---
 
-## Tecnologías utilizadas
+## Tecnologías
 
-- **Java** (Android nativo)
-- Android SDK (compileSdk 36, minSdk 28)
-- **Firebase**: Auth, Firestore, Storage, Analytics (BoM 31.5.0)
-- Material Design 3 (Material Components 1.13)
-- AndroidX: AppCompat, ConstraintLayout, RecyclerView, SwipeRefreshLayout, Activity Result API
-- **Glide** 4.16 para carga de imágenes remotas
+- Java
+- Android SDK
+- Firebase Auth
+- Cloud Firestore
+- Firebase Storage
+- Firebase Analytics
+- Material Design 3
+- AndroidX
+- Glide
 - Gradle Kotlin DSL
-- Git / GitHub
-- Figma (diseño)
+- Git y GitHub
+- Figma
 
 ---
 
-## Instalación y ejecución
+## Instalación
 
-Para trabajar con el proyecto en local:
-
-```
+```bash
 git clone https://github.com/abarrosomagan/ProyectoIntegrador.git
 ```
 
 1. Abrir el proyecto en Android Studio.
 2. Sincronizar Gradle.
-3. **Importante**: usar un emulador con **Google Play Services** (no AOSP) o un dispositivo Android físico, porque Firebase Auth lo requiere.
-4. En la consola de Firebase del proyecto **sazon-cc95a** habilitar:
-   - Authentication → proveedor **Email/Password**
-   - **Firestore Database** (modo prueba o producción con reglas).
-   - **Cloud Storage** (modo prueba o reglas equivalentes).
-5. Ejecutar la app desde Android Studio.
+3. Usar un emulador con Google Play Services o un dispositivo Android físico.
+4. Configurar Firebase para el proyecto correspondiente.
+5. Habilitar Authentication con email y contraseña.
+6. Habilitar Firestore Database.
+7. Habilitar Cloud Storage.
+8. Ejecutar la app desde Android Studio.
 
-### Reglas mínimas de Firestore para desarrollo
+---
+
+## Reglas mínimas de Firestore para desarrollo
 
 ```js
 rules_version = '2';
@@ -247,26 +229,31 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && request.auth.uid == uid;
+
       match /{sub=**} {
         allow read, write: if request.auth != null;
       }
     }
+
     match /recipes/{recipeId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null
         && request.auth.uid == request.resource.data.authorId;
       allow update, delete: if request.auth != null
         && request.auth.uid == resource.data.authorId;
+
       match /likes/{uid} {
         allow read: if request.auth != null;
         allow write: if request.auth != null && request.auth.uid == uid;
       }
     }
+
     match /chats/{chatId} {
       allow read, update: if request.auth != null
         && request.auth.uid in resource.data.participants;
       allow create: if request.auth != null
         && request.auth.uid in request.resource.data.participants;
+
       match /messages/{msgId} {
         allow read: if request.auth != null
           && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
@@ -278,7 +265,9 @@ service cloud.firestore {
 }
 ```
 
-### Reglas mínimas de Storage
+---
+
+## Reglas mínimas de Storage para desarrollo
 
 ```js
 rules_version = '2';
@@ -294,25 +283,20 @@ service firebase.storage {
 
 ---
 
-## Evolución del proyecto
+## Roadmap
 
-El proyecto se ha desarrollado de manera incremental:
-
-1. Diseño en Figma y maquetación inicial de pantallas.
-2. Splash, Login, Registro y estructura base con XML.
-3. Refactor a `Controllers` para limpiar `MainActivity`.
-4. Integración Firebase Auth (login real + sesión persistente).
-5. Firestore para perfil, mensajería y *Nueva conversación*.
-6. Mejora visual: BottomNav rediseñado, perfil con hero gradient colapsable, chat estilo WhatsApp con burbujas asimétricas, perfil estilo Instagram con grid.
-7. Funcionalidad real completa: foto de perfil con Storage, recetas reales con CRUD, likes y guardados persistentes, sistema de seguidores.
-
-Cada avance queda reflejado mediante commits sucesivos en el repositorio.
+1. Completar creación de recetas con imagen.
+2. Añadir comentarios en recetas.
+3. Mejorar el feed con estado de interacción por usuario.
+4. Completar perfiles sociales con listas de seguidores y siguiendo.
+5. Pulir chat con presencia, escritura y notificaciones.
+6. Revisar reglas de Firebase para producción.
+7. Preparar una demo estable para presentación.
 
 ---
 
 ## Licencia
 
-Proyecto desarrollado con fines **académicos**.
+Proyecto desarrollado con fines académicos.
 
-El contenido puede ser utilizado como referencia educativa citando a los autores.
-
+El contenido puede utilizarse como referencia educativa citando a los autores.

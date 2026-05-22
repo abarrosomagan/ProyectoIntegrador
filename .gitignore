@@ -19,5 +19,4 @@ local.properties
 # Notas personales de desarrollo
 dev_notes.md
 
-# Worktrees y trastos auxiliares
-.claude/
+# Trastos auxiliares locales
