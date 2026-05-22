@@ -3,6 +3,7 @@ package com.sazon.proyectointegrador;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -15,6 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
+import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.sazon.proyectointegrador.adapters.RecipeCommentAdapter;
@@ -36,6 +38,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
     private boolean liked = false;
 
     private TextView tvTitle, tvAuthor, tvAuthorAvatar, tvDate, tvDescription;
+    private ImageView recipeHero;
     private TextView tvCommentsTitle, tvCommentsEmpty;
     private TextInputEditText etComment;
     private MaterialButton btnLike, btnSave, btnDelete, btnViewProfile;
@@ -70,6 +73,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
         tvAuthorAvatar = findViewById(R.id.tvAuthorAvatar);
         tvDate = findViewById(R.id.tvRecipeDate);
         tvDescription = findViewById(R.id.tvRecipeDescription);
+        recipeHero = findViewById(R.id.recipeHero);
         btnLike = findViewById(R.id.btnLikeRecipe);
         btnSave = findViewById(R.id.btnSaveRecipe);
         btnDelete = findViewById(R.id.btnDeleteRecipe);
@@ -143,6 +147,15 @@ public class RecipeDetailActivity extends AppCompatActivity {
         String desc = receta.getDescripcion();
         tvDescription.setText(desc == null || desc.isEmpty()
                 ? "(Sin descripción)" : desc);
+
+        String imageUrl = receta.getImageUrl();
+        if (recipeHero != null) {
+            if (imageUrl != null && !imageUrl.trim().isEmpty()) {
+                Glide.with(this).load(imageUrl).centerCrop().into(recipeHero);
+            } else {
+                recipeHero.setImageDrawable(null);
+            }
+        }
 
         pintarBotonLike();
 

@@ -3,11 +3,13 @@ package com.sazon.proyectointegrador.adapters;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.sazon.proyectointegrador.R;
 import com.sazon.proyectointegrador.model.Publicacion;
 
@@ -15,8 +17,7 @@ import java.util.ArrayList;
 
 /**
  * Grid de recetas para la pestaña Perfil: cuadrículas cuadradas tipo Instagram
- * con título centrado y likes superpuestos abajo a la derecha.
- * Cuando metamos imagen real (Storage), reemplazaremos el fondo por la URL.
+ * con imagen, título y likes superpuestos.
  */
 public class PublicacionGridAdapter extends RecyclerView.Adapter<PublicacionGridAdapter.VH> {
 
@@ -45,6 +46,17 @@ public class PublicacionGridAdapter extends RecyclerView.Adapter<PublicacionGrid
         Publicacion p = data.get(position);
         h.tvTitle.setText(safe(p.getTitulo()));
         h.tvLikes.setText("❤ " + p.getLikes());
+        String imageUrl = p.getImageUrl();
+        if (imageUrl != null && !imageUrl.trim().isEmpty()) {
+            h.imgRecipe.setVisibility(View.VISIBLE);
+            Glide.with(h.imgRecipe.getContext())
+                    .load(imageUrl)
+                    .centerCrop()
+                    .into(h.imgRecipe);
+        } else {
+            h.imgRecipe.setVisibility(View.GONE);
+            h.imgRecipe.setImageDrawable(null);
+        }
         h.itemView.setOnClickListener(v -> {
             if (listener != null) listener.onPostClick(p);
         });
@@ -64,11 +76,13 @@ public class PublicacionGridAdapter extends RecyclerView.Adapter<PublicacionGrid
     static class VH extends RecyclerView.ViewHolder {
         final TextView tvTitle;
         final TextView tvLikes;
+        final ImageView imgRecipe;
 
         VH(@NonNull View itemView) {
             super(itemView);
             tvTitle = itemView.findViewById(R.id.tvGridTitle);
             tvLikes = itemView.findViewById(R.id.tvGridLikes);
+            imgRecipe = itemView.findViewById(R.id.imgGridRecipe);
         }
     }
 

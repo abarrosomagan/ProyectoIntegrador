@@ -10,6 +10,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.sazon.proyectointegrador.R;
 import com.sazon.proyectointegrador.model.Publicacion;
 import com.sazon.proyectointegrador.util.RecipeRepository;
@@ -59,6 +60,18 @@ public class PublicacionAdapter extends RecyclerView.Adapter<PublicacionAdapter.
         h.tvTiempo.setText(tiempo);
         h.tvTitulo.setText(titulo);
         h.tvLikes.setText((liked ? "♥ " : "♡ ") + likes);
+
+        String imageUrl = p.getImageUrl();
+        if (imageUrl != null && !imageUrl.trim().isEmpty()) {
+            h.imgReceta.setVisibility(View.VISIBLE);
+            Glide.with(h.imgReceta.getContext())
+                    .load(imageUrl)
+                    .centerCrop()
+                    .into(h.imgReceta);
+        } else {
+            h.imgReceta.setVisibility(View.GONE);
+            h.imgReceta.setImageDrawable(null);
+        }
 
         // Click en autor/avatar -> perfil usuario
         View.OnClickListener authorClick = v -> {

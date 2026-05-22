@@ -47,6 +47,7 @@ public final class RecipeRepository {
                               @NonNull String authorName,
                               @NonNull String titulo,
                               @NonNull String descripcion,
+                              @NonNull String imageUrl,
                               @NonNull OnSuccessListener<DocumentReference> onOk,
                               @NonNull OnFailureListener onErr) {
 
@@ -55,7 +56,7 @@ public final class RecipeRepository {
         data.put("autor", authorName);
         data.put("titulo", titulo);
         data.put("descripcion", descripcion);
-        data.put("imageUrl", "");
+        data.put("imageUrl", imageUrl);
         data.put("likes", 0);
         data.put("createdAt", System.currentTimeMillis());
 

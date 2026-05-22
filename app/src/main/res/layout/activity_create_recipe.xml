@@ -82,6 +82,58 @@
                 android:textColor="@color/texto_secundario"
                 android:textSize="13sp" />
 
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardRecipeImagePicker"
+                android:layout_width="match_parent"
+                android:layout_height="210dp"
+                android:layout_marginTop="20dp"
+                android:foreground="?attr/selectableItemBackground"
+                app:cardBackgroundColor="@color/fondo_superficie"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="1dp"
+                app:strokeColor="@color/color_principal_variante"
+                app:strokeWidth="1dp">
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <ImageView
+                        android:id="@+id/ivRecipePreview"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:contentDescription="Foto de receta"
+                        android:scaleType="centerCrop"
+                        android:visibility="gone" />
+
+                    <LinearLayout
+                        android:id="@+id/photoPlaceholder"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:padding="24dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Añadir foto"
+                            android:textColor="@color/texto_principal"
+                            android:textSize="18sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:gravity="center"
+                            android:text="Toca aquí para elegir una imagen de la receta"
+                            android:textColor="@color/texto_secundario"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+                </FrameLayout>
+            </com.google.android.material.card.MaterialCardView>
+
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilRecipeTitle"
                 style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
@@ -128,15 +180,6 @@
                     android:maxLength="1500"
                     android:minLines="6" />
             </com.google.android.material.textfield.TextInputLayout>
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:text="📷  La foto de la receta llegará en la próxima versión."
-                android:textColor="@color/texto_secundario"
-                android:textSize="12sp"
-                android:textStyle="italic" />
 
         </LinearLayout>
     </ScrollView>

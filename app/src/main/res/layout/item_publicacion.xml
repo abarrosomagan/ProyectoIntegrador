@@ -83,7 +83,7 @@
             android:layout_marginTop="10dp"
             android:scaleType="centerCrop"
             android:contentDescription="Imagen receta"
-            android:src="@android:drawable/gallery_thumb" />
+            android:visibility="gone" />
 
         <!-- LIKES -->
         <TextView

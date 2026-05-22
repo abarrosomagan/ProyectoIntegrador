@@ -49,11 +49,13 @@
     </LinearLayout>
 
     <!-- Hero con título grande -->
-    <View
+    <ImageView
         android:id="@+id/recipeHero"
         android:layout_width="0dp"
         android:layout_height="220dp"
         android:background="@drawable/bg_profile_hero"
+        android:contentDescription="Imagen receta"
+        android:scaleType="centerCrop"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />

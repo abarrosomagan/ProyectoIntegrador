@@ -10,6 +10,18 @@
     android:foreground="?attr/selectableItemBackground"
     app:layout_constraintDimensionRatio="1:1">
 
+    <ImageView
+        android:id="@+id/imgGridRecipe"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:contentDescription="Imagen receta"
+        android:scaleType="centerCrop"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <TextView
         android:id="@+id/tvGridTitle"
         android:layout_width="0dp"
