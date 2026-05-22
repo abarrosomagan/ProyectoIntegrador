@@ -10,12 +10,20 @@ import androidx.activity.EdgeToEdge;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.ListenerRegistration;
+import com.sazon.proyectointegrador.adapters.RecipeCommentAdapter;
 import com.sazon.proyectointegrador.model.Publicacion;
+import com.sazon.proyectointegrador.model.RecipeComment;
 import com.sazon.proyectointegrador.util.RecipeRepository;
 import com.sazon.proyectointegrador.util.SessionManager;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 
 public class RecipeDetailActivity extends AppCompatActivity {
@@ -28,7 +36,13 @@ public class RecipeDetailActivity extends AppCompatActivity {
     private boolean liked = false;
 
     private TextView tvTitle, tvAuthor, tvAuthorAvatar, tvDate, tvDescription;
+    private TextView tvCommentsTitle, tvCommentsEmpty;
+    private TextInputEditText etComment;
     private MaterialButton btnLike, btnSave, btnDelete, btnViewProfile;
+    private MaterialButton btnSendComment;
+    private RecyclerView rvComments;
+    private RecipeCommentAdapter commentsAdapter;
+    private ListenerRegistration commentsRegistration;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -47,6 +61,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
         cargarReceta();
         cargarEstadoGuardado();
         cargarEstadoLike();
+        escucharComentarios();
     }
 
     private void bind() {
@@ -59,6 +74,18 @@ public class RecipeDetailActivity extends AppCompatActivity {
         btnSave = findViewById(R.id.btnSaveRecipe);
         btnDelete = findViewById(R.id.btnDeleteRecipe);
         btnViewProfile = findViewById(R.id.btnFollowFromRecipe);
+        tvCommentsTitle = findViewById(R.id.tvCommentsTitle);
+        tvCommentsEmpty = findViewById(R.id.tvCommentsEmpty);
+        etComment = findViewById(R.id.etRecipeComment);
+        btnSendComment = findViewById(R.id.btnSendComment);
+        rvComments = findViewById(R.id.rvRecipeComments);
+
+        if (rvComments != null) {
+            rvComments.setLayoutManager(new LinearLayoutManager(this));
+            rvComments.setNestedScrollingEnabled(false);
+            commentsAdapter = new RecipeCommentAdapter(new ArrayList<>());
+            rvComments.setAdapter(commentsAdapter);
+        }
 
         ImageButton btnBack = findViewById(R.id.btnBackRecipe);
         if (btnBack != null) btnBack.setOnClickListener(v -> finish());
@@ -70,6 +97,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
         if (btnSave != null) btnSave.setOnClickListener(v -> alternarGuardado());
         if (btnDelete != null) btnDelete.setOnClickListener(v -> confirmarEliminar());
         if (btnViewProfile != null) btnViewProfile.setOnClickListener(v -> abrirPerfilAutor());
+        if (btnSendComment != null) btnSendComment.setOnClickListener(v -> enviarComentario());
     }
 
     private void cargarReceta() {
@@ -160,6 +188,28 @@ public class RecipeDetailActivity extends AppCompatActivity {
         btnLike.setText((liked ? "♥ " : "♡ ") + receta.getLikes());
     }
 
+    private void escucharComentarios() {
+        commentsRegistration = RecipeRepository.commentsQuery(recipeId)
+                .addSnapshotListener((snap, e) -> {
+                    if (e != null || snap == null) return;
+                    ArrayList<RecipeComment> comments =
+                            new ArrayList<>(RecipeRepository.parseComments(snap));
+                    if (commentsAdapter != null) commentsAdapter.updateData(comments);
+                    pintarEstadoComentarios(comments.size());
+                });
+    }
+
+    private void pintarEstadoComentarios(int count) {
+        if (tvCommentsTitle != null) {
+            tvCommentsTitle.setText(count == 1 ? "1 comentario" : count + " comentarios");
+        }
+        if (tvCommentsEmpty != null) {
+            tvCommentsEmpty.setVisibility(count == 0
+                    ? android.view.View.VISIBLE
+                    : android.view.View.GONE);
+        }
+    }
+
     // ===== Acciones =====
 
     private void darLike() {
@@ -192,6 +242,35 @@ public class RecipeDetailActivity extends AppCompatActivity {
             Toast.makeText(this, "No se pudo actualizar el guardado",
                     Toast.LENGTH_SHORT).show();
         });
+    }
+
+    private void enviarComentario() {
+        String uid = SessionManager.currentUid();
+        if (uid == null) {
+            Toast.makeText(this, "Inicia sesión para comentar", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (etComment == null || etComment.getText() == null) return;
+
+        String text = etComment.getText().toString().trim();
+        if (text.isEmpty()) return;
+        if (text.length() > 500) {
+            Toast.makeText(this, "El comentario es demasiado largo", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String authorName = currentAuthorName();
+        btnSendComment.setEnabled(false);
+        RecipeRepository.addComment(recipeId, uid, authorName, text,
+                ref -> {
+                    etComment.setText("");
+                    btnSendComment.setEnabled(true);
+                },
+                e -> {
+                    btnSendComment.setEnabled(true);
+                    Toast.makeText(this, "No se pudo publicar el comentario",
+                            Toast.LENGTH_SHORT).show();
+                });
     }
 
     private void confirmarEliminar() {
@@ -235,6 +314,28 @@ public class RecipeDetailActivity extends AppCompatActivity {
         i.putExtra(ProfileActivity.EXTRA_USERNAME, receta.getAutor());
         i.putExtra(ProfileActivity.EXTRA_IS_OWN_PROFILE, false);
         startActivity(i);
+    }
+
+    private String currentAuthorName() {
+        FirebaseUser user = SessionManager.currentUser();
+        if (user != null) {
+            String display = user.getDisplayName();
+            if (display != null && !display.trim().isEmpty()) return display.trim();
+            String email = user.getEmail();
+            if (email != null && email.contains("@")) {
+                return email.substring(0, email.indexOf("@"));
+            }
+        }
+        return "Chef";
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (commentsRegistration != null) {
+            commentsRegistration.remove();
+            commentsRegistration = null;
+        }
+        super.onDestroy();
     }
 
     private static String formatRelativeTime(long createdAt) {

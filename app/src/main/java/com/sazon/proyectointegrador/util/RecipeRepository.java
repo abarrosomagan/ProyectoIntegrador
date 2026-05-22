@@ -12,6 +12,7 @@ import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.WriteBatch;
 import com.sazon.proyectointegrador.model.Publicacion;
+import com.sazon.proyectointegrador.model.RecipeComment;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -35,6 +36,7 @@ public final class RecipeRepository {
     public static final String COLLECTION_RECIPES = "recipes";
     public static final String SUBCOLLECTION_LIKES = "likes";
     public static final String SUBCOLLECTION_SAVED = "saved";
+    public static final String SUBCOLLECTION_COMMENTS = "comments";
 
     private RecipeRepository() { /* util estática */ }
 
@@ -256,6 +258,51 @@ public final class RecipeRepository {
                     onOk.onSuccess(ids);
                 })
                 .addOnFailureListener(onErr);
+    }
+
+    // ===== Comentarios =====
+
+    public static Query commentsQuery(@NonNull String recipeId) {
+        return SessionManager.db()
+                .collection(COLLECTION_RECIPES)
+                .document(recipeId)
+                .collection(SUBCOLLECTION_COMMENTS)
+                .orderBy("createdAt", Query.Direction.ASCENDING);
+    }
+
+    public static void addComment(@NonNull String recipeId,
+                                  @NonNull String uid,
+                                  @NonNull String authorName,
+                                  @NonNull String text,
+                                  OnSuccessListener<DocumentReference> onOk,
+                                  OnFailureListener onErr) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("recipeId", recipeId);
+        data.put("authorId", uid);
+        data.put("authorName", authorName);
+        data.put("text", text);
+        data.put("createdAt", System.currentTimeMillis());
+
+        SessionManager.db()
+                .collection(COLLECTION_RECIPES)
+                .document(recipeId)
+                .collection(SUBCOLLECTION_COMMENTS)
+                .add(data)
+                .addOnSuccessListener(ref -> { if (onOk != null) onOk.onSuccess(ref); })
+                .addOnFailureListener(e -> { if (onErr != null) onErr.onFailure(e); });
+    }
+
+    public static List<RecipeComment> parseComments(QuerySnapshot snap) {
+        List<RecipeComment> list = new ArrayList<>();
+        if (snap == null) return list;
+        for (DocumentSnapshot doc : snap.getDocuments()) {
+            RecipeComment c = doc.toObject(RecipeComment.class);
+            if (c != null) {
+                c.setId(doc.getId());
+                list.add(c);
+            }
+        }
+        return list;
     }
 
     // ===== Helpers =====

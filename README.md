@@ -49,7 +49,8 @@ El proyecto ya tiene implementado el flujo principal de una red social de receta
 - **Registro** con creación de usuario y perfil base en Firestore.
 - **Feed de recetas** alimentado desde Firestore, con buscador y pull-to-refresh.
 - **Creación de recetas** desde la app y guardado en Firestore.
-- **Detalle de receta** con acciones de like, guardar, compartir, eliminar y acceso al perfil del autor.
+- **Detalle de receta** con acciones de like, guardar, comentar, compartir, eliminar y acceso al perfil del autor.
+- **Comentarios en recetas** en tiempo real mediante subcolecciones de Firestore.
 - **Likes y guardados persistentes** en Firestore, con estado por usuario en feed y detalle.
 - **Perfil propio** con foto de perfil en Firebase Storage, nombre, biografía, contadores y pestañas de recetas propias y guardadas.
 - **Perfil ajeno** con carga de datos reales y botón de seguir o dejar de seguir.
@@ -65,7 +66,6 @@ El proyecto ya tiene implementado el flujo principal de una red social de receta
 Los siguientes puntos siguen abiertos para completar la experiencia final:
 
 - Subida de foto al crear una receta.
-- Comentarios en el detalle de receta.
 - Listas navegables de seguidores y siguiendo.
 - Recorte de imagen de avatar.
 - Indicador de escribiendo y presencia en línea en el chat.
@@ -167,6 +167,8 @@ recipes/{recipeId}
   authorId, autor, titulo, descripcion, imageUrl, likes, createdAt
 
 recipes/{recipeId}/likes/{uid}
+recipes/{recipeId}/comments/{commentId}
+  recipeId, authorId, authorName, text, createdAt
 
 chats/{chatId}
   participants
@@ -245,6 +247,12 @@ service cloud.firestore {
         allow read: if request.auth != null;
         allow write: if request.auth != null && request.auth.uid == uid;
       }
+
+      match /comments/{commentId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null
+          && request.auth.uid == request.resource.data.authorId;
+      }
     }
 
     match /chats/{chatId} {
@@ -285,11 +293,10 @@ service firebase.storage {
 ## Roadmap
 
 1. Completar creación de recetas con imagen.
-2. Añadir comentarios en recetas.
-3. Completar perfiles sociales con listas de seguidores y siguiendo.
-4. Pulir chat con presencia, escritura y notificaciones.
-5. Revisar reglas de Firebase para producción.
-6. Preparar una demo estable para presentación.
+2. Completar perfiles sociales con listas de seguidores y siguiendo.
+3. Pulir chat con presencia, escritura y notificaciones.
+4. Revisar reglas de Firebase para producción.
+5. Preparar una demo estable para presentación.
 
 ---
 
