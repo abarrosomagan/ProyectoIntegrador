@@ -1,6 +1,7 @@
 package com.sazon.proyectointegrador;
 
 import android.os.Bundle;
+import android.content.Intent;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -172,6 +173,14 @@ public class ProfileActivity extends AppCompatActivity {
         if (btnBack != null) btnBack.setOnClickListener(v -> finish());
 
         if (btnFollow != null) btnFollow.setOnClickListener(v -> alternarSigo());
+        if (tvStatFollowers != null) {
+            tvStatFollowers.setOnClickListener(v ->
+                    abrirListaFollow(FollowListActivity.MODE_FOLLOWERS));
+        }
+        if (tvStatFollowing != null) {
+            tvStatFollowing.setOnClickListener(v ->
+                    abrirListaFollow(FollowListActivity.MODE_FOLLOWING));
+        }
     }
 
     // ===== Carga real =====
@@ -298,6 +307,13 @@ public class ProfileActivity extends AppCompatActivity {
                 tvAvatar.setText(String.valueOf(Character.toUpperCase(name.charAt(0))));
             }
         }
+    }
+
+    private void abrirListaFollow(String mode) {
+        Intent i = new Intent(this, FollowListActivity.class);
+        i.putExtra(FollowListActivity.EXTRA_USER_ID, otherUid);
+        i.putExtra(FollowListActivity.EXTRA_MODE, mode);
+        startActivity(i);
     }
 
     private void actualizarEmpty() {

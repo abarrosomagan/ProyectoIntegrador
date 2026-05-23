@@ -55,7 +55,7 @@ El proyecto ya tiene implementado el flujo principal de una red social de receta
 - **Likes y guardados persistentes** en Firestore, con estado por usuario en feed y detalle.
 - **Perfil propio** con foto comprimida guardada en Firestore, nombre, biografía, contadores y pestañas de recetas propias y guardadas.
 - **Perfil ajeno** con carga de datos reales y botón de seguir o dejar de seguir.
-- **Sistema de seguimiento** con contadores de seguidores y siguiendo.
+- **Sistema de seguimiento** con contadores y listas navegables de seguidores y siguiendo.
 - **Chats en tiempo real** con Firestore, lista de conversaciones y búsqueda de usuarios por correo.
 - **Mensajes** con burbujas diferenciadas, separadores de fecha, hora y lectura básica.
 - **Modo demo** para mostrar contenido cuando todavía no hay datos reales.
@@ -66,7 +66,6 @@ El proyecto ya tiene implementado el flujo principal de una red social de receta
 
 Los siguientes puntos siguen abiertos para completar la experiencia final:
 
-- Listas navegables de seguidores y siguiendo.
 - Recorte de imagen de avatar.
 - Indicador de escribiendo y presencia en línea en el chat.
 - Notificaciones push.
@@ -122,6 +121,7 @@ app/src/main/java/com/sazon/proyectointegrador/
  ├── MainActivity
  ├── ChatActivity
  ├── ProfileActivity
+ ├── FollowListActivity
  ├── CreateRecipeActivity
  ├── RecipeDetailActivity
  ├── ui/
@@ -133,14 +133,16 @@ app/src/main/java/com/sazon/proyectointegrador/
  │    ├── ChatMessageAdapter
  │    ├── PublicacionAdapter
  │    ├── PublicacionGridAdapter
- │    └── RecipeCommentAdapter
+ │    ├── RecipeCommentAdapter
+ │    └── UserListAdapter
  ├── model/
  │    ├── Publicacion
  │    ├── ChatThread
  │    ├── ChatMessage
  │    ├── ChatItem
  │    ├── ChatDateHeader
- │    └── RecipeComment
+ │    ├── RecipeComment
+ │    └── UserListItem
  └── util/
       ├── SessionManager
       ├── RecipeRepository
@@ -269,10 +271,9 @@ service cloud.firestore {
 
 ## Roadmap
 
-1. Completar perfiles sociales con listas de seguidores y siguiendo.
-2. Pulir chat con presencia, escritura y notificaciones.
-3. Revisar reglas de Firebase para producción.
-4. Preparar una demo estable para presentación.
+1. Pulir chat con presencia, escritura y notificaciones.
+2. Revisar reglas de Firebase para producción.
+3. Preparar una demo estable para presentación.
 
 ---
 

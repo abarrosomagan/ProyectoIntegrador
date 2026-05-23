@@ -47,6 +47,11 @@
             android:parentActivityName=".MainActivity" />
 
         <activity
+            android:name=".FollowListActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
+
+        <activity
             android:name=".CreateRecipeActivity"
             android:exported="false"
             android:parentActivityName=".MainActivity" />

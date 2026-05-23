@@ -23,6 +23,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.UserProfileChangeRequest;
+import com.sazon.proyectointegrador.FollowListActivity;
 import com.sazon.proyectointegrador.LoginActivity;
 import com.sazon.proyectointegrador.R;
 import com.sazon.proyectointegrador.adapters.PublicacionGridAdapter;
@@ -204,10 +205,10 @@ public class ProfileController {
         }
 
         if (tvStatFollowers != null) tvStatFollowers.setOnClickListener(v ->
-                Toast.makeText(a, "Seguidores (pendiente)", Toast.LENGTH_SHORT).show()
+                abrirListaFollow(FollowListActivity.MODE_FOLLOWERS)
         );
         if (tvStatFollowing != null) tvStatFollowing.setOnClickListener(v ->
-                Toast.makeText(a, "Siguiendo (pendiente)", Toast.LENGTH_SHORT).show()
+                abrirListaFollow(FollowListActivity.MODE_FOLLOWING)
         );
     }
 
@@ -369,6 +370,15 @@ public class ProfileController {
         share.setType("text/plain");
         share.putExtra(Intent.EXTRA_TEXT, texto);
         a.startActivity(Intent.createChooser(share, "Compartir perfil"));
+    }
+
+    private void abrirListaFollow(String mode) {
+        String uid = SessionManager.currentUid();
+        if (uid == null) return;
+        Intent i = new Intent(a, FollowListActivity.class);
+        i.putExtra(FollowListActivity.EXTRA_USER_ID, uid);
+        i.putExtra(FollowListActivity.EXTRA_MODE, mode);
+        a.startActivity(i);
     }
 
     /** Rango de chef en función del número de recetas publicadas. */
