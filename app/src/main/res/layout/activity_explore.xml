@@ -153,6 +153,54 @@
         </LinearLayout>
 
         <LinearLayout
+            android:id="@+id/recipeFilterRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_tab_segmented"
+            android:orientation="horizontal"
+            android:padding="4dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRecipeFilterAll"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:text="Todo"
+                android:textAllCaps="false"
+                android:textSize="12sp"
+                app:cornerRadius="18dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRecipeFilterQuick"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_marginStart="4dp"
+                android:layout_weight="1"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:text="Rápidas"
+                android:textAllCaps="false"
+                android:textSize="12sp"
+                app:cornerRadius="18dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRecipeFilterEasy"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_marginStart="4dp"
+                android:layout_weight="1"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:text="Fáciles"
+                android:textAllCaps="false"
+                android:textSize="12sp"
+                app:cornerRadius="18dp" />
+        </LinearLayout>
+
+        <LinearLayout
             android:id="@+id/chefFilterRow"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

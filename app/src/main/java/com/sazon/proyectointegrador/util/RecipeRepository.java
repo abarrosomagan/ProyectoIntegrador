@@ -49,6 +49,10 @@ public final class RecipeRepository {
                               @NonNull String titulo,
                               @NonNull String descripcion,
                               @NonNull String imageUrl,
+                              @NonNull String difficulty,
+                              @NonNull String tags,
+                              int prepMinutes,
+                              int servings,
                               @NonNull OnSuccessListener<DocumentReference> onOk,
                               @NonNull OnFailureListener onErr) {
 
@@ -58,6 +62,10 @@ public final class RecipeRepository {
         data.put("titulo", titulo);
         data.put("descripcion", descripcion);
         data.put("imageUrl", imageUrl);
+        data.put("difficulty", difficulty);
+        data.put("tags", tags);
+        data.put("prepMinutes", prepMinutes);
+        data.put("servings", servings);
         data.put("likes", 0);
         data.put("createdAt", System.currentTimeMillis());
 
@@ -241,12 +249,20 @@ public final class RecipeRepository {
                                     @NonNull String titulo,
                                     @NonNull String descripcion,
                                     @NonNull String imageUrl,
+                                    @NonNull String difficulty,
+                                    @NonNull String tags,
+                                    int prepMinutes,
+                                    int servings,
                                     @NonNull OnSuccessListener<Void> onOk,
                                     @NonNull OnFailureListener onErr) {
         Map<String, Object> data = new HashMap<>();
         data.put("titulo", titulo);
         data.put("descripcion", descripcion);
         data.put("imageUrl", imageUrl);
+        data.put("difficulty", difficulty);
+        data.put("tags", tags);
+        data.put("prepMinutes", prepMinutes);
+        data.put("servings", servings);
         data.put("updatedAt", System.currentTimeMillis());
 
         SessionManager.db()

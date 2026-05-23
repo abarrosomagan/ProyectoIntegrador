@@ -11,6 +11,10 @@ public class Publicacion {
     private String titulo;
     private String descripcion;
     private String imageUrl;
+    private String difficulty;
+    private String tags;
+    private int prepMinutes;
+    private int servings;
     private int likes;
     private boolean guardada;
     private boolean liked;
@@ -57,6 +61,14 @@ public class Publicacion {
 
     public String getImageUrl() { return imageUrl; }
 
+    public String getDifficulty() { return difficulty; }
+
+    public String getTags() { return tags; }
+
+    public int getPrepMinutes() { return prepMinutes; }
+
+    public int getServings() { return servings; }
+
     public int getLikes() { return likes; }
 
     /**
@@ -85,6 +97,14 @@ public class Publicacion {
     public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
 
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+
+    public void setDifficulty(String difficulty) { this.difficulty = difficulty; }
+
+    public void setTags(String tags) { this.tags = tags; }
+
+    public void setPrepMinutes(int prepMinutes) { this.prepMinutes = prepMinutes; }
+
+    public void setServings(int servings) { this.servings = servings; }
 
     public void setLikes(int likes) { this.likes = likes; }
 

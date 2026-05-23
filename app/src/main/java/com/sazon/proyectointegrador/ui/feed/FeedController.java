@@ -662,7 +662,10 @@ public class FeedController {
             String title = (p.getTitulo() != null) ? p.getTitulo().toLowerCase() : "";
             String desc = (p.getDescripcion() != null) ? p.getDescripcion().toLowerCase() : "";
             String author = (p.getAutor() != null) ? p.getAutor().toLowerCase() : "";
-            if (title.contains(q) || desc.contains(q) || author.contains(q)) {
+            String difficulty = (p.getDifficulty() != null) ? p.getDifficulty().toLowerCase() : "";
+            String tags = (p.getTags() != null) ? p.getTags().toLowerCase() : "";
+            if (title.contains(q) || desc.contains(q) || author.contains(q)
+                    || difficulty.contains(q) || tags.contains(q)) {
                 filtered.add(p);
             }
         }

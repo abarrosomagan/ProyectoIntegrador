@@ -75,6 +75,17 @@
             android:maxLines="2"
             android:ellipsize="end" />
 
+        <TextView
+            android:id="@+id/tvRecipeCardMeta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/texto_secundario"
+            android:textSize="12sp"
+            android:visibility="gone" />
+
         <!-- IMAGEN RECETA (placeholder) -->
         <ImageView
             android:id="@+id/imgReceta"

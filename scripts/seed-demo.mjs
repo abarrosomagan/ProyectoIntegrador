@@ -270,6 +270,23 @@ const saved = [
   ["test1@sazon.com", "demo-salmon-horno"],
 ];
 
+const recipeMeta = {
+  "demo-tortilla-jugosa": ["Media", "casera, tortilla, clasico", 35, 4],
+  "demo-pasta-setas": ["Facil", "rapida, pasta, vegetariana", 25, 2],
+  "demo-gazpacho-verano": ["Facil", "rapida, verano, saludable", 15, 4],
+  "demo-bizcocho-limon": ["Media", "postre, horno, merienda", 55, 8],
+  "demo-arroz-meloso-pollo": ["Media", "arroz, pollo, comida familiar", 45, 4],
+  "demo-ensalada-garbanzos": ["Facil", "rapida, legumbres, saludable", 20, 2],
+  "demo-tacos-pollo-lima": ["Facil", "rapida, pollo, cena informal", 30, 3],
+  "demo-crema-calabaza": ["Facil", "verduras, crema, saludable", 40, 4],
+  "demo-pancakes-avena": ["Facil", "desayuno, rapida, dulce", 20, 2],
+  "demo-hummus-pimenton": ["Facil", "aperitivo, legumbres, vegetariana", 10, 4],
+  "demo-salmon-horno": ["Facil", "rapida, pescado, saludable", 25, 2],
+  "demo-croquetas-jamon": ["Avanzada", "clasico, tapas, bechamel", 90, 6],
+  "demo-tarta-queso": ["Media", "postre, horno, celebracion", 60, 8],
+  "demo-bruschetta-tomate": ["Facil", "rapida, aperitivo, tomate", 12, 2],
+};
+
 const follows = [
   ["fer1@test.com", "fer2@test.com"],
   ["fer1@test.com", "test1@sazon.com"],
@@ -375,6 +392,7 @@ async function seedUserProfiles() {
 async function seedRecipes() {
   for (const recipe of recipeTemplates) {
     const owner = demoUsers.get(recipe.ownerEmail);
+    const meta = recipeMeta[recipe.id] || ["", "", 0, 0];
     await setDoc(
       `recipes/${recipe.id}`,
       {
@@ -383,6 +401,10 @@ async function seedRecipes() {
         titulo: recipe.title,
         descripcion: recipe.description,
         imageUrl: recipe.imageUrl,
+        difficulty: meta[0],
+        tags: meta[1],
+        prepMinutes: meta[2],
+        servings: meta[3],
         likes: recipe.likes,
         createdAt: recipe.createdAt,
         updatedAt: recipe.createdAt,

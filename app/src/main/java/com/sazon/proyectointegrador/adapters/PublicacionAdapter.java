@@ -63,6 +63,8 @@ public class PublicacionAdapter extends RecyclerView.Adapter<PublicacionAdapter.
         h.tvTitulo.setText(titulo);
         h.tvLikes.setText((liked ? "♥ " : "♡ ") + likes);
 
+        bindMeta(h, p);
+
         String imageUrl = p.getImageUrl();
         if (imageUrl != null && !imageUrl.trim().isEmpty()) {
             h.imgReceta.setVisibility(View.VISIBLE);
@@ -157,7 +159,7 @@ public class PublicacionAdapter extends RecyclerView.Adapter<PublicacionAdapter.
     static class VH extends RecyclerView.ViewHolder {
         View cardPublicacion;
         ImageView imgAvatarAutor, imgReceta;
-        TextView tvAutor, tvTiempo, tvTitulo, tvLikes;
+        TextView tvAutor, tvTiempo, tvTitulo, tvLikes, tvMeta;
         ImageButton btnGuardar;
 
         VH(@NonNull View itemView) {
@@ -169,8 +171,35 @@ public class PublicacionAdapter extends RecyclerView.Adapter<PublicacionAdapter.
             tvTiempo = itemView.findViewById(R.id.tvTiempo);
             tvTitulo = itemView.findViewById(R.id.tvTitulo);
             tvLikes = itemView.findViewById(R.id.tvLikes);
+            tvMeta = itemView.findViewById(R.id.tvRecipeCardMeta);
             btnGuardar = itemView.findViewById(R.id.btnGuardar);
         }
+    }
+
+    private static void bindMeta(@NonNull VH h, Publicacion p) {
+        if (h.tvMeta == null) return;
+        StringBuilder meta = new StringBuilder();
+        if (p.getPrepMinutes() > 0) appendMeta(meta, p.getPrepMinutes() + " min");
+        if (p.getServings() > 0) appendMeta(meta, p.getServings() + " rac.");
+        if (p.getDifficulty() != null && !p.getDifficulty().trim().isEmpty()) {
+            appendMeta(meta, p.getDifficulty().trim());
+        }
+        if (p.getTags() != null && !p.getTags().trim().isEmpty()) {
+            appendMeta(meta, firstTag(p.getTags()));
+        }
+        h.tvMeta.setText(meta.toString());
+        h.tvMeta.setVisibility(meta.length() == 0 ? View.GONE : View.VISIBLE);
+    }
+
+    private static void appendMeta(StringBuilder out, String value) {
+        if (value == null || value.trim().isEmpty()) return;
+        if (out.length() > 0) out.append(" · ");
+        out.append(value);
+    }
+
+    private static String firstTag(String tags) {
+        String first = tags.split(",")[0].trim();
+        return first.isEmpty() ? "" : "#" + first.replace(" ", "");
     }
 
     private static String safe(String s) {

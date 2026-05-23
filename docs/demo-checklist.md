@@ -76,7 +76,9 @@ El script `scripts/seed-demo.mjs` prepara estos datos mínimos.
 - Feed carga sin quedarse vacío.
 - Crear receta funciona.
 - Editar receta funciona.
+- Crear receta guarda tiempo, raciones, dificultad y etiquetas.
 - Detalle muestra comentarios.
+- Detalle muestra metadatos culinarios y etiquetas.
 - Like cambia de estado.
 - Guardado aparece en perfil.
 - Seguir actualiza contador.
@@ -85,6 +87,7 @@ El script `scripts/seed-demo.mjs` prepara estos datos mínimos.
 - Actividad muestra eventos y contador.
 - Desde Explorar se puede seguir a un chef.
 - Explorar permite ordenar recetas por Para ti, Recientes y Populares.
+- Explorar filtra recetas rapidas y faciles.
 - Explorar filtra chefs seguidos.
 - Actividad permite ver solo eventos sin leer.
 - Ajustes abre la cuenta y permite cerrar sesion.

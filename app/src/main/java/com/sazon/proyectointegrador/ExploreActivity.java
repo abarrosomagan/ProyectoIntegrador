@@ -41,6 +41,9 @@ public class ExploreActivity extends AppCompatActivity {
     private static final int SORT_FOR_YOU = 0;
     private static final int SORT_RECENT = 1;
     private static final int SORT_POPULAR = 2;
+    private static final int FILTER_ALL = 0;
+    private static final int FILTER_QUICK = 1;
+    private static final int FILTER_EASY = 2;
 
     private RecyclerView rv;
     private View empty;
@@ -48,13 +51,15 @@ public class ExploreActivity extends AppCompatActivity {
     private TextInputEditText etSearch;
     private MaterialButton btnRecipes, btnChefs;
     private MaterialButton btnForYou, btnRecent, btnPopular, btnAllChefs, btnFollowingChefs;
-    private View recipeSortRow, chefFilterRow;
+    private MaterialButton btnFilterAll, btnFilterQuick, btnFilterEasy;
+    private View recipeSortRow, recipeFilterRow, chefFilterRow;
     private PublicacionAdapter recipeAdapter;
     private UserListAdapter userAdapter;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable pendingSearch;
     private int mode = MODE_RECIPES;
     private int recipeSortMode = SORT_FOR_YOU;
+    private int recipeFilterMode = FILTER_ALL;
     private boolean onlyFollowingChefs = false;
     private int generation = 0;
     private final ArrayList<Publicacion> recipes = new ArrayList<>();
@@ -87,9 +92,13 @@ public class ExploreActivity extends AppCompatActivity {
         btnForYou = findViewById(R.id.btnExploreForYou);
         btnRecent = findViewById(R.id.btnExploreRecent);
         btnPopular = findViewById(R.id.btnExplorePopular);
+        btnFilterAll = findViewById(R.id.btnRecipeFilterAll);
+        btnFilterQuick = findViewById(R.id.btnRecipeFilterQuick);
+        btnFilterEasy = findViewById(R.id.btnRecipeFilterEasy);
         btnAllChefs = findViewById(R.id.btnExploreAllChefs);
         btnFollowingChefs = findViewById(R.id.btnExploreFollowingChefs);
         recipeSortRow = findViewById(R.id.recipeSortRow);
+        recipeFilterRow = findViewById(R.id.recipeFilterRow);
         chefFilterRow = findViewById(R.id.chefFilterRow);
         ImageButton back = findViewById(R.id.btnBackExplore);
         if (back != null) back.setOnClickListener(v -> finish());
@@ -111,10 +120,14 @@ public class ExploreActivity extends AppCompatActivity {
         if (btnForYou != null) btnForYou.setOnClickListener(v -> switchRecipeSort(SORT_FOR_YOU));
         if (btnRecent != null) btnRecent.setOnClickListener(v -> switchRecipeSort(SORT_RECENT));
         if (btnPopular != null) btnPopular.setOnClickListener(v -> switchRecipeSort(SORT_POPULAR));
+        if (btnFilterAll != null) btnFilterAll.setOnClickListener(v -> switchRecipeFilter(FILTER_ALL));
+        if (btnFilterQuick != null) btnFilterQuick.setOnClickListener(v -> switchRecipeFilter(FILTER_QUICK));
+        if (btnFilterEasy != null) btnFilterEasy.setOnClickListener(v -> switchRecipeFilter(FILTER_EASY));
         if (btnAllChefs != null) btnAllChefs.setOnClickListener(v -> switchChefFilter(false));
         if (btnFollowingChefs != null) btnFollowingChefs.setOnClickListener(v -> switchChefFilter(true));
         paintTabs();
         paintRecipeSort();
+        paintRecipeFilter();
         paintChefFilter();
     }
 
@@ -155,6 +168,13 @@ public class ExploreActivity extends AppCompatActivity {
         render(currentQuery());
     }
 
+    private void switchRecipeFilter(int filterMode) {
+        if (recipeFilterMode == filterMode) return;
+        recipeFilterMode = filterMode;
+        paintRecipeFilter();
+        render(currentQuery());
+    }
+
     private void paintTabs() {
         paintTab(btnRecipes, mode == MODE_RECIPES);
         paintTab(btnChefs, mode == MODE_CHEFS);
@@ -175,6 +195,9 @@ public class ExploreActivity extends AppCompatActivity {
         if (recipeSortRow != null) {
             recipeSortRow.setVisibility(mode == MODE_RECIPES ? View.VISIBLE : View.GONE);
         }
+        if (recipeFilterRow != null) {
+            recipeFilterRow.setVisibility(mode == MODE_RECIPES ? View.VISIBLE : View.GONE);
+        }
         if (chefFilterRow != null) {
             chefFilterRow.setVisibility(mode == MODE_CHEFS ? View.VISIBLE : View.GONE);
         }
@@ -189,6 +212,12 @@ public class ExploreActivity extends AppCompatActivity {
     private void paintChefFilter() {
         paintTab(btnAllChefs, !onlyFollowingChefs);
         paintTab(btnFollowingChefs, onlyFollowingChefs);
+    }
+
+    private void paintRecipeFilter() {
+        paintTab(btnFilterAll, recipeFilterMode == FILTER_ALL);
+        paintTab(btnFilterQuick, recipeFilterMode == FILTER_QUICK);
+        paintTab(btnFilterEasy, recipeFilterMode == FILTER_EASY);
     }
 
     private void loadInitialData() {
@@ -317,6 +346,7 @@ public class ExploreActivity extends AppCompatActivity {
         ArrayList<Publicacion> filtered = new ArrayList<>();
         String q = query == null ? "" : query.toLowerCase();
         for (Publicacion p : recipes) {
+            if (!matchesRecipeFilter(p)) continue;
             if (q.length() < 2 || recipeMatches(p, q)) filtered.add(p);
         }
         sortRecipes(filtered);
@@ -374,7 +404,22 @@ public class ExploreActivity extends AppCompatActivity {
     private boolean recipeMatches(Publicacion p, String q) {
         return contains(p.getTitulo(), q)
                 || contains(p.getDescripcion(), q)
-                || contains(p.getAutor(), q);
+                || contains(p.getAutor(), q)
+                || contains(p.getDifficulty(), q)
+                || contains(p.getTags(), q);
+    }
+
+    private boolean matchesRecipeFilter(Publicacion p) {
+        if (recipeFilterMode == FILTER_QUICK) {
+            return p.getPrepMinutes() > 0 && p.getPrepMinutes() <= 30;
+        }
+        if (recipeFilterMode == FILTER_EASY) {
+            return contains(p.getDifficulty(), "facil")
+                    || contains(p.getDifficulty(), "fácil")
+                    || contains(p.getTags(), "facil")
+                    || contains(p.getTags(), "fácil");
+        }
+        return true;
     }
 
     private boolean userMatches(UserListItem user, String q) {

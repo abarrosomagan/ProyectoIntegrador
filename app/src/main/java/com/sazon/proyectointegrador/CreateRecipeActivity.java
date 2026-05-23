@@ -28,8 +28,8 @@ public class CreateRecipeActivity extends AppCompatActivity {
 
     public static final String EXTRA_EDIT_RECIPE_ID = "EXTRA_EDIT_RECIPE_ID";
 
-    private TextInputLayout tilTitle, tilDesc;
-    private TextInputEditText etTitle, etDesc;
+    private TextInputLayout tilTitle, tilDesc, tilPrepMinutes, tilServings;
+    private TextInputEditText etTitle, etDesc, etPrepMinutes, etServings, etDifficulty, etTags;
     private TextView tvScreenTitle, tvScreenSubtitle;
     private MaterialButton btnPublish, btnRemoveImage;
     private ImageButton btnCancel;
@@ -65,8 +65,14 @@ public class CreateRecipeActivity extends AppCompatActivity {
         editingRecipeId = getIntent().getStringExtra(EXTRA_EDIT_RECIPE_ID);
         tilTitle = findViewById(R.id.tilRecipeTitle);
         tilDesc  = findViewById(R.id.tilRecipeDesc);
+        tilPrepMinutes = findViewById(R.id.tilPrepMinutes);
+        tilServings = findViewById(R.id.tilServings);
         etTitle  = findViewById(R.id.etRecipeTitle);
         etDesc   = findViewById(R.id.etRecipeDesc);
+        etPrepMinutes = findViewById(R.id.etPrepMinutes);
+        etServings = findViewById(R.id.etServings);
+        etDifficulty = findViewById(R.id.etDifficulty);
+        etTags = findViewById(R.id.etRecipeTags);
         tvScreenTitle = findViewById(R.id.tvCreateRecipeTitle);
         tvScreenSubtitle = findViewById(R.id.tvCreateRecipeSubtitle);
         btnPublish = findViewById(R.id.btnPublishRecipe);
@@ -98,6 +104,10 @@ public class CreateRecipeActivity extends AppCompatActivity {
 
         String title = etTitle.getText() != null ? etTitle.getText().toString().trim() : "";
         String desc  = etDesc.getText()  != null ? etDesc.getText().toString().trim()  : "";
+        int prepMinutes = parsePositiveInt(etPrepMinutes, 0);
+        int servings = parsePositiveInt(etServings, 0);
+        String difficulty = textOf(etDifficulty);
+        String tags = normalizeTags(textOf(etTags));
 
         if (title.isEmpty()) {
             tilTitle.setError("Ponle un título");
@@ -108,8 +118,19 @@ public class CreateRecipeActivity extends AppCompatActivity {
             return;
         }
 
+        if (prepMinutes < 0) {
+            if (tilPrepMinutes != null) tilPrepMinutes.setError("Usa minutos validos");
+            return;
+        }
+        if (servings < 0) {
+            if (tilServings != null) tilServings.setError("Usa raciones validas");
+            return;
+        }
+
         tilTitle.setError(null);
         tilDesc.setError(null);
+        if (tilPrepMinutes != null) tilPrepMinutes.setError(null);
+        if (tilServings != null) tilServings.setError(null);
         setLoading(true);
 
         String uid = SessionManager.currentUid();
@@ -133,9 +154,10 @@ public class CreateRecipeActivity extends AppCompatActivity {
         }
 
         if (isEditMode()) {
-            updateRecipe(title, desc, imageValue);
+            updateRecipe(title, desc, imageValue, difficulty, tags, prepMinutes, servings);
         } else {
-            createRecipe(uid, authorName, title, desc, imageValue);
+            createRecipe(uid, authorName, title, desc, imageValue,
+                    difficulty, tags, prepMinutes, servings);
         }
     }
 
@@ -143,8 +165,13 @@ public class CreateRecipeActivity extends AppCompatActivity {
                               @NonNull String authorName,
                               @NonNull String title,
                               @NonNull String desc,
-                              @NonNull String imageUrl) {
+                              @NonNull String imageUrl,
+                              @NonNull String difficulty,
+                              @NonNull String tags,
+                              int prepMinutes,
+                              int servings) {
         RecipeRepository.create(uid, authorName, title, desc, imageUrl,
+                difficulty, tags, prepMinutes, servings,
                 ref -> {
                     Toast.makeText(this, "Receta publicada", Toast.LENGTH_SHORT).show();
                     finish();
@@ -158,8 +185,13 @@ public class CreateRecipeActivity extends AppCompatActivity {
 
     private void updateRecipe(@NonNull String title,
                               @NonNull String desc,
-                              @NonNull String imageUrl) {
+                              @NonNull String imageUrl,
+                              @NonNull String difficulty,
+                              @NonNull String tags,
+                              int prepMinutes,
+                              int servings) {
         RecipeRepository.updateRecipe(editingRecipeId, title, desc, imageUrl,
+                difficulty, tags, prepMinutes, servings,
                 unused -> {
                     Toast.makeText(this, "Receta actualizada", Toast.LENGTH_SHORT).show();
                     finish();
@@ -199,11 +231,23 @@ public class CreateRecipeActivity extends AppCompatActivity {
                     }
                     String title = doc.getString("titulo");
                     String desc = doc.getString("descripcion");
+                    String difficulty = doc.getString("difficulty");
+                    String tags = doc.getString("tags");
+                    Long prepMinutes = doc.getLong("prepMinutes");
+                    Long servings = doc.getLong("servings");
                     currentImageValue = doc.getString("imageUrl");
                     if (currentImageValue == null) currentImageValue = "";
 
                     if (etTitle != null) etTitle.setText(title == null ? "" : title);
                     if (etDesc != null) etDesc.setText(desc == null ? "" : desc);
+                    if (etDifficulty != null) etDifficulty.setText(difficulty == null ? "" : difficulty);
+                    if (etTags != null) etTags.setText(tags == null ? "" : tags);
+                    if (etPrepMinutes != null && prepMinutes != null && prepMinutes > 0) {
+                        etPrepMinutes.setText(String.valueOf(prepMinutes));
+                    }
+                    if (etServings != null && servings != null && servings > 0) {
+                        etServings.setText(String.valueOf(servings));
+                    }
                     showCurrentImage();
                     setLoading(false);
                 })
@@ -252,7 +296,39 @@ public class CreateRecipeActivity extends AppCompatActivity {
         }
         etTitle.setEnabled(!loading);
         etDesc.setEnabled(!loading);
+        if (etPrepMinutes != null) etPrepMinutes.setEnabled(!loading);
+        if (etServings != null) etServings.setEnabled(!loading);
+        if (etDifficulty != null) etDifficulty.setEnabled(!loading);
+        if (etTags != null) etTags.setEnabled(!loading);
         if (cardImagePicker != null) cardImagePicker.setEnabled(!loading);
         if (btnRemoveImage != null) btnRemoveImage.setEnabled(!loading);
+    }
+
+    private static String textOf(TextInputEditText input) {
+        return input != null && input.getText() != null ? input.getText().toString().trim() : "";
+    }
+
+    private static int parsePositiveInt(TextInputEditText input, int fallback) {
+        String value = textOf(input);
+        if (value.isEmpty()) return fallback;
+        try {
+            int parsed = Integer.parseInt(value);
+            return parsed < 0 ? -1 : parsed;
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+
+    private static String normalizeTags(String raw) {
+        if (raw == null || raw.trim().isEmpty()) return "";
+        String[] parts = raw.split(",");
+        StringBuilder out = new StringBuilder();
+        for (String part : parts) {
+            String tag = part.trim();
+            if (tag.isEmpty()) continue;
+            if (out.length() > 0) out.append(", ");
+            out.append(tag);
+        }
+        return out.toString();
     }
 }

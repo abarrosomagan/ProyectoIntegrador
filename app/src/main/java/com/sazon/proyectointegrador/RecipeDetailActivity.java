@@ -39,7 +39,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
     private boolean guardada = false;
     private boolean liked = false;
 
-    private TextView tvTitle, tvAuthor, tvAuthorAvatar, tvDate, tvDescription;
+    private TextView tvTitle, tvAuthor, tvAuthorAvatar, tvDate, tvDescription, tvRecipeMeta, tvRecipeTags;
     private ImageView recipeHero;
     private TextView tvCommentsTitle, tvCommentsEmpty;
     private TextInputEditText etComment;
@@ -77,6 +77,8 @@ public class RecipeDetailActivity extends AppCompatActivity {
         tvAuthorAvatar = findViewById(R.id.tvAuthorAvatar);
         tvDate = findViewById(R.id.tvRecipeDate);
         tvDescription = findViewById(R.id.tvRecipeDescription);
+        tvRecipeMeta = findViewById(R.id.tvRecipeMeta);
+        tvRecipeTags = findViewById(R.id.tvRecipeTags);
         recipeHero = findViewById(R.id.recipeHero);
         btnLike = findViewById(R.id.btnLikeRecipe);
         btnSave = findViewById(R.id.btnSaveRecipe);
@@ -154,6 +156,8 @@ public class RecipeDetailActivity extends AppCompatActivity {
         tvDescription.setText(desc == null || desc.isEmpty()
                 ? "(Sin descripción)" : desc);
 
+        pintarMetaReceta();
+
         String imageUrl = receta.getImageUrl();
         if (recipeHero != null) {
             if (imageUrl != null && !imageUrl.trim().isEmpty()) {
@@ -174,6 +178,47 @@ public class RecipeDetailActivity extends AppCompatActivity {
                 : android.view.View.GONE);
         btnViewProfile.setVisibility(soyAutor ? android.view.View.GONE
                 : android.view.View.VISIBLE);
+    }
+
+    private void pintarMetaReceta() {
+        if (receta == null) return;
+        StringBuilder meta = new StringBuilder();
+        if (receta.getPrepMinutes() > 0) appendMeta(meta, receta.getPrepMinutes() + " min");
+        if (receta.getServings() > 0) appendMeta(meta, receta.getServings() + " raciones");
+        if (receta.getDifficulty() != null && !receta.getDifficulty().trim().isEmpty()) {
+            appendMeta(meta, receta.getDifficulty().trim());
+        }
+        if (tvRecipeMeta != null) {
+            tvRecipeMeta.setText(meta.toString());
+            tvRecipeMeta.setVisibility(meta.length() == 0
+                    ? android.view.View.GONE
+                    : android.view.View.VISIBLE);
+        }
+        String tags = receta.getTags();
+        if (tvRecipeTags != null) {
+            if (tags == null || tags.trim().isEmpty()) {
+                tvRecipeTags.setVisibility(android.view.View.GONE);
+            } else {
+                tvRecipeTags.setText(formatTags(tags));
+                tvRecipeTags.setVisibility(android.view.View.VISIBLE);
+            }
+        }
+    }
+
+    private static void appendMeta(StringBuilder out, String value) {
+        if (out.length() > 0) out.append("  ·  ");
+        out.append(value);
+    }
+
+    private static String formatTags(String tags) {
+        StringBuilder out = new StringBuilder();
+        for (String part : tags.split(",")) {
+            String tag = part.trim();
+            if (tag.isEmpty()) continue;
+            if (out.length() > 0) out.append("  ");
+            out.append("#").append(tag.replace(" ", ""));
+        }
+        return out.toString();
     }
 
     private void cargarEstadoGuardado() {
