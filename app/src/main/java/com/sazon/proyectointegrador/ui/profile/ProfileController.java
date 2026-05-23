@@ -670,8 +670,9 @@ public class ProfileController {
     private void showMoreMenu(View anchor) {
         androidx.appcompat.widget.PopupMenu menu = new androidx.appcompat.widget.PopupMenu(a, anchor);
         menu.getMenu().add(0, 1, 0, "Ajustes");
-        menu.getMenu().add(0, 2, 1, "Acerca de");
-        menu.getMenu().add(0, 3, 2, "Cerrar sesión");
+        menu.getMenu().add(0, 2, 1, "Actividad");
+        menu.getMenu().add(0, 3, 2, "Acerca de");
+        menu.getMenu().add(0, 4, 3, "Cerrar sesión");
 
         menu.setOnMenuItemClickListener(item -> {
             int id = item.getItemId();
@@ -681,9 +682,13 @@ public class ProfileController {
                         com.sazon.proyectointegrador.SettingsActivity.class));
                 return true;
             } else if (id == 2) {
-                Toast.makeText(a, "Recetas Social v1 (pendiente)", Toast.LENGTH_SHORT).show();
+                a.startActivity(new Intent(a,
+                        com.sazon.proyectointegrador.ActivityActivity.class));
                 return true;
             } else if (id == 3) {
+                Toast.makeText(a, "Recetas Social v1 (pendiente)", Toast.LENGTH_SHORT).show();
+                return true;
+            } else if (id == 4) {
                 confirmLogout();
                 return true;
             }

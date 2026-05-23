@@ -276,6 +276,12 @@ public class FeedController {
                     return true;
                 }
 
+                if (id == R.id.action_activity) {
+                    a.startActivity(new Intent(a,
+                            com.sazon.proyectointegrador.ActivityActivity.class));
+                    return true;
+                }
+
                 if (id == R.id.action_logout) {
                     doLogout();
                     return true;

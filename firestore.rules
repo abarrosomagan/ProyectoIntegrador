@@ -44,6 +44,13 @@ service cloud.firestore {
       match /liked/{recipeId} {
         allow read, create, update, delete: if isSelf(uid);
       }
+
+      match /activity/{activityId} {
+        allow read, update, delete: if isSelf(uid);
+        allow create: if signedIn()
+          && request.resource.data.actorId == request.auth.uid
+          && request.resource.data.type in ['like', 'save', 'comment', 'follow'];
+      }
     }
 
     match /recipes/{recipeId} {

@@ -21,6 +21,7 @@ import com.google.firebase.firestore.ListenerRegistration;
 import com.sazon.proyectointegrador.adapters.RecipeCommentAdapter;
 import com.sazon.proyectointegrador.model.Publicacion;
 import com.sazon.proyectointegrador.model.RecipeComment;
+import com.sazon.proyectointegrador.util.ActivityRepository;
 import com.sazon.proyectointegrador.util.RecipeImageHelper;
 import com.sazon.proyectointegrador.util.RecipeRepository;
 import com.sazon.proyectointegrador.util.RecipeStateBus;
@@ -255,7 +256,14 @@ public class RecipeDetailActivity extends AppCompatActivity {
         receta.setLikes(nuevosLikes);
         pintarBotonLike();
         RecipeStateBus.publish(receta, nuevoLiked, nuevosLikes, null);
-        RecipeRepository.toggleLike(recipeId, uid, nuevoLiked, null, e -> {
+        RecipeRepository.toggleLike(recipeId, uid, nuevoLiked, v -> {
+            if (nuevoLiked && receta != null) {
+                ActivityRepository.notifyRecipe(receta.getAuthorId(),
+                        ActivityRepository.TYPE_LIKE, uid, currentAuthorName(),
+                        recipeId, receta.getTitulo() == null ? "" : receta.getTitulo(),
+                        null, null);
+            }
+        }, e -> {
             liked = !nuevoLiked;
             receta.setLiked(liked);
             receta.setLikes(likesAnteriores);
@@ -272,7 +280,14 @@ public class RecipeDetailActivity extends AppCompatActivity {
         if (receta != null) receta.setGuardada(nuevo);
         pintarBotonGuardar();
         if (receta != null) RecipeStateBus.publish(receta, null, null, nuevo);
-        RecipeRepository.toggleSaved(recipeId, uid, nuevo, null, e -> {
+        RecipeRepository.toggleSaved(recipeId, uid, nuevo, v -> {
+            if (nuevo && receta != null) {
+                ActivityRepository.notifyRecipe(receta.getAuthorId(),
+                        ActivityRepository.TYPE_SAVE, uid, currentAuthorName(),
+                        recipeId, receta.getTitulo() == null ? "" : receta.getTitulo(),
+                        null, null);
+            }
+        }, e -> {
             guardada = !nuevo;
             if (receta != null) receta.setGuardada(guardada);
             pintarBotonGuardar();
@@ -303,6 +318,12 @@ public class RecipeDetailActivity extends AppCompatActivity {
                 ref -> {
                     etComment.setText("");
                     btnSendComment.setEnabled(true);
+                    if (receta != null) {
+                        ActivityRepository.notifyRecipe(receta.getAuthorId(),
+                                ActivityRepository.TYPE_COMMENT, uid, authorName,
+                                recipeId, receta.getTitulo() == null ? "" : receta.getTitulo(),
+                                null, null);
+                    }
                 },
                 e -> {
                     btnSendComment.setEnabled(true);

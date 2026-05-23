@@ -20,6 +20,7 @@ import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.button.MaterialButton;
 import com.sazon.proyectointegrador.adapters.PublicacionGridAdapter;
 import com.sazon.proyectointegrador.model.Publicacion;
+import com.sazon.proyectointegrador.util.ActivityRepository;
 import com.sazon.proyectointegrador.util.FollowRepository;
 import com.sazon.proyectointegrador.util.RecipeRepository;
 import com.sazon.proyectointegrador.util.SessionManager;
@@ -264,7 +265,11 @@ public class ProfileActivity extends AppCompatActivity {
         tvStatFollowers.setText(String.valueOf(followersCount));
         pintarBotonFollow();
 
-        FollowRepository.toggleFollow(meUid, otherUid, nuevo, null, e -> {
+        FollowRepository.toggleFollow(meUid, otherUid, nuevo, v -> {
+            if (nuevo) {
+                ActivityRepository.notifyFollow(otherUid, meUid, currentActorName(), null, null);
+            }
+        }, e -> {
             // Si falla, revertimos UI
             siguiendo = !nuevo;
             followersCount += nuevo ? -1 : 1;
@@ -337,5 +342,15 @@ public class ProfileActivity extends AppCompatActivity {
         if (recetas < 11)  return "🍲 Cocinero";
         if (recetas < 26)  return "👨‍🍳 Chef de cocina";
         return "⭐ Chef estrella";
+    }
+    private static String currentActorName() {
+        com.google.firebase.auth.FirebaseUser user = SessionManager.currentUser();
+        if (user != null) {
+            String display = user.getDisplayName();
+            if (display != null && !display.trim().isEmpty()) return display.trim();
+            String email = user.getEmail();
+            if (email != null && email.contains("@")) return email.substring(0, email.indexOf("@"));
+        }
+        return "Chef";
     }
 }

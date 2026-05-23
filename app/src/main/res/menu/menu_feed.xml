@@ -6,6 +6,10 @@
         android:title="Ajustes" />
 
     <item
+        android:id="@+id/action_activity"
+        android:title="Actividad" />
+
+    <item
         android:id="@+id/action_logout"
         android:title="Cerrar sesión" />
 

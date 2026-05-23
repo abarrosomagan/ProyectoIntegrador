@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.sazon.proyectointegrador.R;
 import com.sazon.proyectointegrador.model.Publicacion;
+import com.sazon.proyectointegrador.util.ActivityRepository;
 import com.sazon.proyectointegrador.util.RecipeImageHelper;
 import com.sazon.proyectointegrador.util.RecipeRepository;
 import com.sazon.proyectointegrador.util.RecipeStateBus;
@@ -101,7 +102,13 @@ public class PublicacionAdapter extends RecyclerView.Adapter<PublicacionAdapter.
             p.setGuardada(nuevo);
             notifyItemChanged(h.getAdapterPosition());
             RecipeStateBus.publish(p, null, null, nuevo);
-            RecipeRepository.toggleSaved(recipeId, uid, nuevo, null, e -> {
+            RecipeRepository.toggleSaved(recipeId, uid, nuevo, unused -> {
+                if (nuevo) {
+                    ActivityRepository.notifyRecipe(p.getAuthorId(),
+                            ActivityRepository.TYPE_SAVE, uid, currentActorName(),
+                            recipeId, safe(p.getTitulo()), null, null);
+                }
+            }, e -> {
                 // Si falla, revertimos visualmente
                 p.setGuardada(!nuevo);
                 notifyItemChanged(h.getAdapterPosition());
@@ -121,7 +128,13 @@ public class PublicacionAdapter extends RecyclerView.Adapter<PublicacionAdapter.
             p.setLikes(nuevoLikes);
             RecipeStateBus.publish(p, nuevoLiked, nuevoLikes, null);
             h.tvLikes.setText((nuevoLiked ? "♥ " : "♡ ") + nuevoLikes);
-            RecipeRepository.toggleLike(recipeId, uid, nuevoLiked, null, e -> {
+            RecipeRepository.toggleLike(recipeId, uid, nuevoLiked, unused -> {
+                if (nuevoLiked) {
+                    ActivityRepository.notifyRecipe(p.getAuthorId(),
+                            ActivityRepository.TYPE_LIKE, uid, currentActorName(),
+                            recipeId, safe(p.getTitulo()), null, null);
+                }
+            }, e -> {
                 p.setLiked(!nuevoLiked);
                 p.setLikes(anteriorLikes);
                 RecipeStateBus.publish(p, !nuevoLiked, anteriorLikes, null);
@@ -162,6 +175,17 @@ public class PublicacionAdapter extends RecyclerView.Adapter<PublicacionAdapter.
 
     private static String safe(String s) {
         return s == null ? "" : s;
+    }
+
+    private static String currentActorName() {
+        com.google.firebase.auth.FirebaseUser user = SessionManager.currentUser();
+        if (user != null) {
+            String display = user.getDisplayName();
+            if (display != null && !display.trim().isEmpty()) return display.trim();
+            String email = user.getEmail();
+            if (email != null && email.contains("@")) return email.substring(0, email.indexOf("@"));
+        }
+        return "Chef";
     }
 
     // createdAt -> "hace X min/h", "ayer", "hace N días"
