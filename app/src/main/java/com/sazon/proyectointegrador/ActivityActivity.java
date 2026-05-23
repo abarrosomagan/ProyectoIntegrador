@@ -27,6 +27,9 @@ public class ActivityActivity extends AppCompatActivity {
     private View empty;
     private ActivityAdapter adapter;
     private ListenerRegistration registration;
+    private MaterialButton btnMarkRead, btnAll, btnUnread;
+    private final ArrayList<ActivityItem> allItems = new ArrayList<>();
+    private boolean showUnreadOnly = false;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -45,8 +48,13 @@ public class ActivityActivity extends AppCompatActivity {
         ImageButton back = findViewById(R.id.btnBackActivity);
         if (back != null) back.setOnClickListener(v -> finish());
 
-        MaterialButton markRead = findViewById(R.id.btnMarkRead);
-        if (markRead != null) markRead.setOnClickListener(v -> markAllRead());
+        btnMarkRead = findViewById(R.id.btnMarkRead);
+        btnAll = findViewById(R.id.btnActivityAll);
+        btnUnread = findViewById(R.id.btnActivityUnread);
+        if (btnMarkRead != null) btnMarkRead.setOnClickListener(v -> markAllRead());
+        if (btnAll != null) btnAll.setOnClickListener(v -> switchFilter(false));
+        if (btnUnread != null) btnUnread.setOnClickListener(v -> switchFilter(true));
+        paintFilterButtons();
 
         listenActivity();
     }
@@ -63,18 +71,52 @@ public class ActivityActivity extends AppCompatActivity {
                         Toast.makeText(this, "No se pudo cargar actividad", Toast.LENGTH_SHORT).show();
                         return;
                     }
-                    ArrayList<ActivityItem> items = new ArrayList<>();
+                    allItems.clear();
                     for (com.google.firebase.firestore.DocumentSnapshot doc : snap.getDocuments()) {
                         ActivityItem item = doc.toObject(ActivityItem.class);
                         if (item != null) {
                             item.setId(doc.getId());
-                            items.add(item);
+                            allItems.add(item);
                         }
                     }
-                    if (adapter != null) adapter.updateData(items);
-                    if (empty != null) empty.setVisibility(items.isEmpty() ? View.VISIBLE : View.GONE);
-                    if (rv != null) rv.setVisibility(items.isEmpty() ? View.GONE : View.VISIBLE);
+                    renderActivity();
                 });
+    }
+
+    private void switchFilter(boolean unreadOnly) {
+        if (showUnreadOnly == unreadOnly) return;
+        showUnreadOnly = unreadOnly;
+        paintFilterButtons();
+        renderActivity();
+    }
+
+    private void renderActivity() {
+        ArrayList<ActivityItem> visible = new ArrayList<>();
+        int unread = 0;
+        for (ActivityItem item : allItems) {
+            if (!item.isRead()) unread++;
+            if (!showUnreadOnly || !item.isRead()) visible.add(item);
+        }
+        if (adapter != null) adapter.updateData(visible);
+        if (empty != null) empty.setVisibility(visible.isEmpty() ? View.VISIBLE : View.GONE);
+        if (rv != null) rv.setVisibility(visible.isEmpty() ? View.GONE : View.VISIBLE);
+        if (btnUnread != null) btnUnread.setText(unread > 0 ? "Sin leer (" + unread + ")" : "Sin leer");
+        if (btnMarkRead != null) btnMarkRead.setEnabled(unread > 0);
+    }
+
+    private void paintFilterButtons() {
+        paintFilter(btnAll, !showUnreadOnly);
+        paintFilter(btnUnread, showUnreadOnly);
+    }
+
+    private void paintFilter(MaterialButton button, boolean selected) {
+        if (button == null) return;
+        button.setTextColor(getResources().getColor(selected
+                ? R.color.texto_sobre_principal
+                : R.color.texto_principal));
+        button.setBackgroundTintList(getColorStateList(selected
+                ? R.color.color_principal_variante
+                : R.color.fondo_superficie));
     }
 
     private void markAllRead() {

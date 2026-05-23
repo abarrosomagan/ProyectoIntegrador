@@ -38,21 +38,30 @@ public class ExploreActivity extends AppCompatActivity {
 
     private static final int MODE_RECIPES = 0;
     private static final int MODE_CHEFS = 1;
+    private static final int SORT_FOR_YOU = 0;
+    private static final int SORT_RECENT = 1;
+    private static final int SORT_POPULAR = 2;
 
     private RecyclerView rv;
     private View empty;
     private TextView tvEmptyTitle, tvEmptySubtitle;
     private TextInputEditText etSearch;
     private MaterialButton btnRecipes, btnChefs;
+    private MaterialButton btnForYou, btnRecent, btnPopular, btnAllChefs, btnFollowingChefs;
+    private View recipeSortRow, chefFilterRow;
     private PublicacionAdapter recipeAdapter;
     private UserListAdapter userAdapter;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable pendingSearch;
     private int mode = MODE_RECIPES;
+    private int recipeSortMode = SORT_FOR_YOU;
+    private boolean onlyFollowingChefs = false;
     private int generation = 0;
     private final ArrayList<Publicacion> recipes = new ArrayList<>();
     private final ArrayList<UserListItem> chefs = new ArrayList<>();
     private final Set<String> followingIds = new HashSet<>();
+    private final Set<String> likedIds = new HashSet<>();
+    private final Set<String> savedIds = new HashSet<>();
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -75,6 +84,13 @@ public class ExploreActivity extends AppCompatActivity {
         etSearch = findViewById(R.id.etExploreSearch);
         btnRecipes = findViewById(R.id.btnExploreRecipes);
         btnChefs = findViewById(R.id.btnExploreChefs);
+        btnForYou = findViewById(R.id.btnExploreForYou);
+        btnRecent = findViewById(R.id.btnExploreRecent);
+        btnPopular = findViewById(R.id.btnExplorePopular);
+        btnAllChefs = findViewById(R.id.btnExploreAllChefs);
+        btnFollowingChefs = findViewById(R.id.btnExploreFollowingChefs);
+        recipeSortRow = findViewById(R.id.recipeSortRow);
+        chefFilterRow = findViewById(R.id.chefFilterRow);
         ImageButton back = findViewById(R.id.btnBackExplore);
         if (back != null) back.setOnClickListener(v -> finish());
     }
@@ -92,7 +108,14 @@ public class ExploreActivity extends AppCompatActivity {
     private void setupTabs() {
         if (btnRecipes != null) btnRecipes.setOnClickListener(v -> switchMode(MODE_RECIPES));
         if (btnChefs != null) btnChefs.setOnClickListener(v -> switchMode(MODE_CHEFS));
+        if (btnForYou != null) btnForYou.setOnClickListener(v -> switchRecipeSort(SORT_FOR_YOU));
+        if (btnRecent != null) btnRecent.setOnClickListener(v -> switchRecipeSort(SORT_RECENT));
+        if (btnPopular != null) btnPopular.setOnClickListener(v -> switchRecipeSort(SORT_POPULAR));
+        if (btnAllChefs != null) btnAllChefs.setOnClickListener(v -> switchChefFilter(false));
+        if (btnFollowingChefs != null) btnFollowingChefs.setOnClickListener(v -> switchChefFilter(true));
         paintTabs();
+        paintRecipeSort();
+        paintChefFilter();
     }
 
     private void setupSearch() {
@@ -110,6 +133,7 @@ public class ExploreActivity extends AppCompatActivity {
         if (mode == newMode) return;
         mode = newMode;
         paintTabs();
+        paintModeRows();
         if (rv != null) rv.setAdapter(mode == MODE_RECIPES ? recipeAdapter : userAdapter);
         String query = etSearch != null && etSearch.getText() != null
                 ? etSearch.getText().toString().trim()
@@ -117,9 +141,24 @@ public class ExploreActivity extends AppCompatActivity {
         render(query);
     }
 
+    private void switchRecipeSort(int sortMode) {
+        if (recipeSortMode == sortMode) return;
+        recipeSortMode = sortMode;
+        paintRecipeSort();
+        render(currentQuery());
+    }
+
+    private void switchChefFilter(boolean followingOnly) {
+        if (onlyFollowingChefs == followingOnly) return;
+        onlyFollowingChefs = followingOnly;
+        paintChefFilter();
+        render(currentQuery());
+    }
+
     private void paintTabs() {
         paintTab(btnRecipes, mode == MODE_RECIPES);
         paintTab(btnChefs, mode == MODE_CHEFS);
+        paintModeRows();
     }
 
     private void paintTab(MaterialButton button, boolean selected) {
@@ -132,10 +171,31 @@ public class ExploreActivity extends AppCompatActivity {
                 : R.color.fondo_superficie));
     }
 
+    private void paintModeRows() {
+        if (recipeSortRow != null) {
+            recipeSortRow.setVisibility(mode == MODE_RECIPES ? View.VISIBLE : View.GONE);
+        }
+        if (chefFilterRow != null) {
+            chefFilterRow.setVisibility(mode == MODE_CHEFS ? View.VISIBLE : View.GONE);
+        }
+    }
+
+    private void paintRecipeSort() {
+        paintTab(btnForYou, recipeSortMode == SORT_FOR_YOU);
+        paintTab(btnRecent, recipeSortMode == SORT_RECENT);
+        paintTab(btnPopular, recipeSortMode == SORT_POPULAR);
+    }
+
+    private void paintChefFilter() {
+        paintTab(btnAllChefs, !onlyFollowingChefs);
+        paintTab(btnFollowingChefs, onlyFollowingChefs);
+    }
+
     private void loadInitialData() {
         loadRecipes();
         loadChefs();
         loadFollowingIds();
+        loadRecipeState();
     }
 
     private void loadRecipes() {
@@ -143,6 +203,7 @@ public class ExploreActivity extends AppCompatActivity {
                 list -> {
                     recipes.clear();
                     if (list != null) recipes.addAll(list);
+                    applyRecipeState();
                     render(currentQuery());
                 },
                 e -> Toast.makeText(this, "No se pudieron cargar recetas", Toast.LENGTH_SHORT).show());
@@ -190,6 +251,28 @@ public class ExploreActivity extends AppCompatActivity {
                     followingIds.clear();
                     if (ids != null) followingIds.addAll(ids);
                     applyFollowingState();
+                    applyRecipeState();
+                    render(currentQuery());
+                },
+                e -> { });
+    }
+
+    private void loadRecipeState() {
+        String uid = SessionManager.currentUid();
+        if (uid == null) return;
+        RecipeRepository.savedIds(uid,
+                ids -> {
+                    savedIds.clear();
+                    if (ids != null) savedIds.addAll(ids);
+                    applyRecipeState();
+                    render(currentQuery());
+                },
+                e -> { });
+        RecipeRepository.likedIds(uid,
+                ids -> {
+                    likedIds.clear();
+                    if (ids != null) likedIds.addAll(ids);
+                    applyRecipeState();
                     render(currentQuery());
                 },
                 e -> { });
@@ -198,6 +281,14 @@ public class ExploreActivity extends AppCompatActivity {
     private void applyFollowingState() {
         for (UserListItem user : chefs) {
             user.setFollowing(user.getUid() != null && followingIds.contains(user.getUid()));
+        }
+    }
+
+    private void applyRecipeState() {
+        for (Publicacion recipe : recipes) {
+            String id = recipe.getId();
+            recipe.setGuardada(id != null && savedIds.contains(id));
+            recipe.setLiked(id != null && likedIds.contains(id));
         }
     }
 
@@ -228,6 +319,7 @@ public class ExploreActivity extends AppCompatActivity {
         for (Publicacion p : recipes) {
             if (q.length() < 2 || recipeMatches(p, q)) filtered.add(p);
         }
+        sortRecipes(filtered);
         if (recipeAdapter != null) recipeAdapter.updateData(filtered);
         paintEmpty(filtered.isEmpty(), "Sin recetas", "Prueba con otro ingrediente o plato.");
     }
@@ -236,6 +328,7 @@ public class ExploreActivity extends AppCompatActivity {
         ArrayList<UserListItem> filtered = new ArrayList<>();
         String q = query == null ? "" : query.toLowerCase();
         for (UserListItem user : chefs) {
+            if (onlyFollowingChefs && !user.isFollowing()) continue;
             if (q.length() < 2 || userMatches(user, q)) filtered.add(user);
         }
         Collections.sort(filtered, (a, b) -> {
@@ -246,7 +339,36 @@ public class ExploreActivity extends AppCompatActivity {
             return a.displayName().compareToIgnoreCase(b.displayName());
         });
         if (userAdapter != null) userAdapter.updateData(filtered);
-        paintEmpty(filtered.isEmpty(), "Sin chefs", "Prueba con otro nombre o usuario.");
+        paintEmpty(filtered.isEmpty(), onlyFollowingChefs ? "Sin chefs seguidos" : "Sin chefs",
+                onlyFollowingChefs ? "Sigue chefs desde Explorar para construir este filtro."
+                        : "Prueba con otro nombre o usuario.");
+    }
+
+    private void sortRecipes(ArrayList<Publicacion> filtered) {
+        if (recipeSortMode == SORT_RECENT) {
+            Collections.sort(filtered, (a, b) -> Long.compare(b.getCreatedAt(), a.getCreatedAt()));
+            return;
+        }
+        if (recipeSortMode == SORT_POPULAR) {
+            Collections.sort(filtered, (a, b) -> {
+                int byLikes = Integer.compare(b.getLikes(), a.getLikes());
+                if (byLikes != 0) return byLikes;
+                return Long.compare(b.getCreatedAt(), a.getCreatedAt());
+            });
+            return;
+        }
+        Collections.sort(filtered, (a, b) -> Double.compare(scoreFor(b), scoreFor(a)));
+    }
+
+    private double scoreFor(Publicacion recipe) {
+        double score = recipe.getLikes() * 6.0;
+        if (recipe.isLiked()) score += 35.0;
+        if (recipe.isGuardada()) score += 24.0;
+        if (recipe.getAuthorId() != null && followingIds.contains(recipe.getAuthorId())) score += 80.0;
+        long ageMillis = Math.max(0, System.currentTimeMillis() - recipe.getCreatedAt());
+        double ageDays = ageMillis / (24.0 * 60.0 * 60.0 * 1000.0);
+        score += Math.max(0.0, 45.0 - (ageDays * 3.0));
+        return score;
     }
 
     private boolean recipeMatches(Publicacion p, String q) {

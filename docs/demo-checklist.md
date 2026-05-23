@@ -84,6 +84,9 @@ El script `scripts/seed-demo.mjs` prepara estos datos mínimos.
 - Explorar abre recetas y chefs.
 - Actividad muestra eventos y contador.
 - Desde Explorar se puede seguir a un chef.
+- Explorar permite ordenar recetas por Para ti, Recientes y Populares.
+- Explorar filtra chefs seguidos.
+- Actividad permite ver solo eventos sin leer.
 - Ajustes abre la cuenta y permite cerrar sesion.
 - Chat envía y recibe.
 - Indicador de escribiendo aparece entre dos sesiones.
