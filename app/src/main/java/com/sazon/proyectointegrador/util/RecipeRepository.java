@@ -158,6 +158,39 @@ public final class RecipeRepository {
                 .addOnFailureListener(onErr);
     }
 
+    // ===== Visualizaciones =====
+
+    /**
+     * Registra una visualización del usuario sobre la receta. Si ya hay un doc
+     * en /recipes/{id}/views/{uid}, no hace nada (no se cuenta dos veces).
+     * Si no, lo crea e incrementa el contador denormalizado /recipes/{id}.views.
+     *
+     * Se ejecuta en transacción para que el contador sea fiel.
+     */
+    public static void registerView(@NonNull String recipeId,
+                                    @NonNull String uid,
+                                    OnSuccessListener<Void> onOk,
+                                    OnFailureListener onErr) {
+        com.google.firebase.firestore.DocumentReference recipeRef =
+                SessionManager.db().collection(COLLECTION_RECIPES).document(recipeId);
+        com.google.firebase.firestore.DocumentReference viewRef =
+                recipeRef.collection("views").document(uid);
+
+        SessionManager.db().runTransaction(
+                (com.google.firebase.firestore.Transaction.Function<Void>) transaction -> {
+            com.google.firebase.firestore.DocumentSnapshot snap = transaction.get(viewRef);
+            if (snap.exists()) return null; // ya contado
+            Map<String, Object> data = new HashMap<>();
+            data.put("uid", uid);
+            data.put("createdAt", System.currentTimeMillis());
+            transaction.set(viewRef, data);
+            transaction.update(recipeRef, "views", FieldValue.increment(1));
+            return null;
+        })
+        .addOnSuccessListener(v -> { if (onOk != null) onOk.onSuccess(v); })
+        .addOnFailureListener(e -> { if (onErr != null) onErr.onFailure(e); });
+    }
+
     // ===== Likes =====
 
     /** Da like (true) o lo quita (false), actualizando contador denormalizado. */

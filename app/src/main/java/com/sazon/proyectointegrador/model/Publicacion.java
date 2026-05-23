@@ -16,6 +16,7 @@ public class Publicacion {
     private int prepMinutes;
     private int servings;
     private int likes;
+    private int views;
     private boolean guardada;
     private boolean liked;
 
@@ -71,6 +72,8 @@ public class Publicacion {
 
     public int getLikes() { return likes; }
 
+    public int getViews() { return views; }
+
     /**
      * "guardada" es estado por usuario, NO un campo del doc de la receta.
      * Lo excluimos de la serializacion Firestore — se computa al cargar las
@@ -107,6 +110,8 @@ public class Publicacion {
     public void setServings(int servings) { this.servings = servings; }
 
     public void setLikes(int likes) { this.likes = likes; }
+
+    public void setViews(int views) { this.views = views; }
 
     @Exclude
     public void setGuardada(boolean guardada) { this.guardada = guardada; }

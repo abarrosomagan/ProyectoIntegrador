@@ -130,7 +130,11 @@ public class RecipeDetailActivity extends AppCompatActivity {
                         return;
                     }
                     receta.setId(doc.getId());
+                    // Lectura defensiva del campo views por si no estaba en el constructor
+                    Long viewsLong = doc.getLong("views");
+                    if (viewsLong != null) receta.setViews(viewsLong.intValue());
                     pintarReceta();
+                    registrarVisualizacion();
                 })
                 .addOnFailureListener(e -> {
                     Toast.makeText(this, "No se pudo cargar la receta",
@@ -180,6 +184,21 @@ public class RecipeDetailActivity extends AppCompatActivity {
                 : android.view.View.VISIBLE);
     }
 
+    private void registrarVisualizacion() {
+        String uid = SessionManager.currentUid();
+        if (uid == null || receta == null || receta.getId() == null) return;
+        // No contar la visualización del propio autor (no inflamos nuestras métricas)
+        if (uid.equals(receta.getAuthorId())) return;
+
+        RecipeRepository.registerView(receta.getId(), uid,
+                unused -> {
+                    // Incrementamos el contador local y refrescamos meta
+                    receta.setViews(receta.getViews() + 1);
+                    pintarMetaReceta();
+                },
+                e -> { /* ya estaba contado o falló: nada */ });
+    }
+
     private void pintarMetaReceta() {
         if (receta == null) return;
         StringBuilder meta = new StringBuilder();
@@ -187,6 +206,9 @@ public class RecipeDetailActivity extends AppCompatActivity {
         if (receta.getServings() > 0) appendMeta(meta, receta.getServings() + " raciones");
         if (receta.getDifficulty() != null && !receta.getDifficulty().trim().isEmpty()) {
             appendMeta(meta, receta.getDifficulty().trim());
+        }
+        if (receta.getViews() > 0) {
+            appendMeta(meta, formatViewsCount(receta.getViews()));
         }
         if (tvRecipeMeta != null) {
             tvRecipeMeta.setText(meta.toString());
@@ -463,6 +485,16 @@ public class RecipeDetailActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         if (receta != null && recipeId != null) cargarReceta();
+    }
+
+    /** "1.2k visualizaciones" / "47 visualizaciones". */
+    private static String formatViewsCount(int views) {
+        if (views >= 1000) {
+            double k = views / 1000.0;
+            return String.format(new java.util.Locale("es", "ES"),
+                    "%.1fk visualizaciones", k);
+        }
+        return views + " visualizaciones";
     }
 
     private static String formatRelativeTime(long createdAt) {
