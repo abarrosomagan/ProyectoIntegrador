@@ -1,9 +1,14 @@
 package com.sazon.proyectointegrador.adapters;
 
+import android.content.Context;
+import android.view.GestureDetector;
+import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.OvershootInterpolator;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -84,10 +89,8 @@ public class PublicacionAdapter extends RecyclerView.Adapter<PublicacionAdapter.
         h.imgAvatarAutor.setOnClickListener(authorClick);
         h.tvAutor.setOnClickListener(authorClick);
 
-        // Click en card -> detalle receta
-        h.cardPublicacion.setOnClickListener(v -> {
-            if (onPostClick != null) onPostClick.onPostClick(p);
-        });
+        // Tap → detalle, doble tap → like + corazón flotante (estilo Instagram)
+        attachTapAndDoubleTap(h, p);
 
         // Guardar: pinta icono + persiste en Firestore
         h.btnGuardar.setImageResource(
@@ -212,6 +215,92 @@ public class PublicacionAdapter extends RecyclerView.Adapter<PublicacionAdapter.
 
     private static String safe(String s) {
         return s == null ? "" : s;
+    }
+
+    /**
+     * Detecta tap simple (abre detalle) y doble tap (da like + corazón flotante).
+     * GestureDetector espera ~300ms para confirmar single tap, así que el detalle
+     * abre tras una breve pausa — comportamiento idéntico a Instagram.
+     */
+    @SuppressWarnings("ClickableViewAccessibility")
+    private void attachTapAndDoubleTap(@NonNull VH h, @NonNull Publicacion p) {
+        Context ctx = h.cardPublicacion.getContext();
+        GestureDetector gd = new GestureDetector(ctx,
+                new GestureDetector.SimpleOnGestureListener() {
+            @Override public boolean onDown(MotionEvent e) { return true; }
+
+            @Override
+            public boolean onSingleTapConfirmed(MotionEvent e) {
+                if (onPostClick != null) onPostClick.onPostClick(p);
+                return true;
+            }
+
+            @Override
+            public boolean onDoubleTap(MotionEvent e) {
+                if (!p.isLiked()) togglearLikeDesdeDobleTap(h, p);
+                animarCorazonExplosivo(h.cardPublicacion);
+                return true;
+            }
+        });
+        h.cardPublicacion.setOnTouchListener((v, ev) -> gd.onTouchEvent(ev));
+    }
+
+    private void togglearLikeDesdeDobleTap(@NonNull VH h, @NonNull Publicacion p) {
+        String uid = SessionManager.currentUid();
+        String recipeId = p.getId();
+        if (uid == null || recipeId == null || recipeId.isEmpty()) return;
+
+        int anteriorLikes = p.getLikes();
+        int nuevoLikes = anteriorLikes + 1;
+        p.setLiked(true);
+        p.setLikes(nuevoLikes);
+        RecipeStateBus.publish(p, true, nuevoLikes, null);
+        h.tvLikes.setText("♥ " + nuevoLikes);
+        pintarColorLike(h.tvLikes, true);
+        animateLikePulse(h.tvLikes);
+
+        RecipeRepository.toggleLike(recipeId, uid, true, unused -> {
+            ActivityRepository.notifyRecipe(p.getAuthorId(),
+                    ActivityRepository.TYPE_LIKE, uid, currentActorName(),
+                    recipeId, safe(p.getTitulo()), null, null);
+        }, e -> {
+            p.setLiked(false);
+            p.setLikes(anteriorLikes);
+            RecipeStateBus.publish(p, false, anteriorLikes, null);
+            h.tvLikes.setText("♡ " + anteriorLikes);
+            pintarColorLike(h.tvLikes, false);
+        });
+    }
+
+    /** Corazón rojo grande aparece, crece y se desvanece sobre la card. */
+    private static void animarCorazonExplosivo(View target) {
+        if (!(target instanceof ViewGroup)) return;
+        ViewGroup parent = (ViewGroup) target;
+        Context ctx = parent.getContext();
+
+        ImageView heart = new ImageView(ctx);
+        heart.setImageResource(R.drawable.ic_heart_filled);
+        int size = (int) (130 * ctx.getResources().getDisplayMetrics().density);
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(size, size);
+        lp.gravity = Gravity.CENTER;
+        heart.setLayoutParams(lp);
+        heart.setScaleX(0f);
+        heart.setScaleY(0f);
+        heart.setAlpha(0f);
+
+        parent.addView(heart);
+        heart.animate()
+                .scaleX(1f).scaleY(1f)
+                .alpha(0.95f)
+                .setDuration(220)
+                .setInterpolator(new OvershootInterpolator(2f))
+                .withEndAction(() -> heart.animate()
+                        .scaleX(1.35f).scaleY(1.35f)
+                        .alpha(0f)
+                        .setDuration(320)
+                        .withEndAction(() -> parent.removeView(heart))
+                        .start())
+                .start();
     }
 
     private static void pintarColorLike(TextView tv, boolean liked) {
