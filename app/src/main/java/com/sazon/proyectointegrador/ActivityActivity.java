@@ -87,6 +87,7 @@ public class ActivityActivity extends AppCompatActivity {
 
     private void openActivityTarget(ActivityItem item) {
         if (item == null) return;
+        markRead(item);
         String type = item.getType();
         if (ActivityRepository.TYPE_FOLLOW.equals(type)) {
             openActorProfile(item);
@@ -100,6 +101,12 @@ public class ActivityActivity extends AppCompatActivity {
         } else {
             openActorProfile(item);
         }
+    }
+
+    private void markRead(ActivityItem item) {
+        String uid = SessionManager.currentUid();
+        if (uid == null || item.getId() == null || item.isRead()) return;
+        ActivityRepository.markRead(uid, item.getId(), null, null);
     }
 
     private void openActorProfile(ActivityItem item) {

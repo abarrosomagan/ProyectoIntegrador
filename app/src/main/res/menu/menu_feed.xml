@@ -10,6 +10,10 @@
         android:title="Actividad" />
 
     <item
+        android:id="@+id/action_explore"
+        android:title="Explorar" />
+
+    <item
         android:id="@+id/action_logout"
         android:title="Cerrar sesión" />
 

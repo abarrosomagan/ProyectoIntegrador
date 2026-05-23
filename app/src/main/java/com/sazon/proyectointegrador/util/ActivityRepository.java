@@ -84,6 +84,20 @@ public final class ActivityRepository {
                 .addOnFailureListener(e -> { if (onErr != null) onErr.onFailure(e); });
     }
 
+    public static void markRead(@NonNull String uid,
+                                @NonNull String activityId,
+                                OnSuccessListener<Void> onOk,
+                                OnFailureListener onErr) {
+        SessionManager.db()
+                .collection(SessionManager.COLLECTION_USERS)
+                .document(uid)
+                .collection(SUB_ACTIVITY)
+                .document(activityId)
+                .update("read", true)
+                .addOnSuccessListener(v -> { if (onOk != null) onOk.onSuccess(v); })
+                .addOnFailureListener(e -> { if (onErr != null) onErr.onFailure(e); });
+    }
+
     private static void create(@NonNull String targetUid,
                                @NonNull String type,
                                @NonNull String actorId,

@@ -145,12 +145,54 @@
                 android:layout_weight="1"
                 android:layout_marginTop="12dp">
 
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/rvFeed"
+                <FrameLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:clipToPadding="false"
-                    android:paddingBottom="90dp" />
+                    android:layout_height="match_parent">
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rvFeed"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:clipToPadding="false"
+                        android:paddingBottom="90dp" />
+
+                    <LinearLayout
+                        android:id="@+id/emptyFeed"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:padding="28dp"
+                        android:visibility="gone">
+
+                        <ImageView
+                            android:layout_width="72dp"
+                            android:layout_height="72dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_recipe_empty" />
+
+                        <TextView
+                            android:id="@+id/tvFeedEmptyTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="14dp"
+                            android:text="Sin recetas"
+                            android:textColor="@color/texto_principal"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvFeedEmptySubtitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:gravity="center"
+                            android:text="Cuando haya contenido aparecera aqui."
+                            android:textColor="@color/texto_secundario"
+                            android:textSize="13.5sp" />
+                    </LinearLayout>
+                </FrameLayout>
 
             </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 

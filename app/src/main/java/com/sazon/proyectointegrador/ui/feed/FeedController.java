@@ -8,6 +8,7 @@ import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.view.View;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
@@ -48,6 +49,8 @@ public class FeedController {
     private SwipeRefreshLayout swipeFeed;
     private TextInputEditText etBuscar;
     private TextView tvSaludo;
+    private TextView tvFeedEmptyTitle, tvFeedEmptySubtitle;
+    private View emptyFeed;
     private ImageView imgAvatarFeed;
     private ImageButton btnMenuFeed;
     private MaterialButton btnFeedForYou, btnFeedFollowing, btnFeedPopular;
@@ -122,6 +125,9 @@ public class FeedController {
         etBuscar = a.findViewById(R.id.etBuscar);
 
         tvSaludo = a.findViewById(R.id.tvSaludo);
+        tvFeedEmptyTitle = a.findViewById(R.id.tvFeedEmptyTitle);
+        tvFeedEmptySubtitle = a.findViewById(R.id.tvFeedEmptySubtitle);
+        emptyFeed = a.findViewById(R.id.emptyFeed);
         imgAvatarFeed = a.findViewById(R.id.imgAvatarFeed);
         btnFeedForYou = a.findViewById(R.id.btnFeedForYou);
         btnFeedFollowing = a.findViewById(R.id.btnFeedFollowing);
@@ -201,7 +207,10 @@ public class FeedController {
             @Override
             public void onSuccess(List<Publicacion> data) {
                 if (generation != searchGeneration) return;
-                if (feedAdapter != null) feedAdapter.updateData(new ArrayList<>(data));
+                ArrayList<Publicacion> result = new ArrayList<>(data);
+                if (feedAdapter != null) feedAdapter.updateData(result);
+                paintEmpty(result.isEmpty(), "Sin resultados",
+                        "Prueba con otra receta, ingrediente o chef.");
                 setRefreshing(false);
             }
 
@@ -282,6 +291,12 @@ public class FeedController {
                     return true;
                 }
 
+                if (id == R.id.action_explore) {
+                    a.startActivity(new Intent(a,
+                            com.sazon.proyectointegrador.ExploreActivity.class));
+                    return true;
+                }
+
                 if (id == R.id.action_logout) {
                     doLogout();
                     return true;
@@ -324,24 +339,35 @@ public class FeedController {
         if (feedAdapter == null) return;
 
         if (query == null || query.isEmpty()) {
-            feedAdapter.updateData(new ArrayList<>(currentData));
+            ArrayList<Publicacion> copy = new ArrayList<>(currentData);
+            feedAdapter.updateData(copy);
+            paintEmpty(copy.isEmpty(), emptyTitleForMode(), emptySubtitleForMode());
             return;
         }
 
-        ArrayList<Publicacion> filtered = new ArrayList<>();
-        String q = query.toLowerCase();
-
-        for (Publicacion p : currentData) {
-            String title = (p.getTitulo() != null) ? p.getTitulo().toLowerCase() : "";
-            String desc  = (p.getDescripcion() != null) ? p.getDescripcion().toLowerCase() : "";
-            String author = (p.getAutor() != null) ? p.getAutor().toLowerCase() : "";
-
-            if (title.contains(q) || desc.contains(q) || author.contains(q)) {
-                filtered.add(p);
-            }
-        }
+        ArrayList<Publicacion> filtered = filterByQuery(currentData, query);
 
         feedAdapter.updateData(filtered);
+        paintEmpty(filtered.isEmpty(), "Sin resultados", "Prueba con otra receta, ingrediente o chef.");
+    }
+
+    private void paintEmpty(boolean isEmpty, String title, String subtitle) {
+        if (rvFeed != null) rvFeed.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
+        if (emptyFeed != null) emptyFeed.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+        if (tvFeedEmptyTitle != null) tvFeedEmptyTitle.setText(title);
+        if (tvFeedEmptySubtitle != null) tvFeedEmptySubtitle.setText(subtitle);
+    }
+
+    private String emptyTitleForMode() {
+        if (feedMode == MODE_FOLLOWING) return "Sin recetas de seguidos";
+        if (feedMode == MODE_POPULAR) return "Sin populares todavia";
+        return "Sin recetas";
+    }
+
+    private String emptySubtitleForMode() {
+        if (feedMode == MODE_FOLLOWING) return "Sigue a otros chefs para construir tu feed.";
+        if (feedMode == MODE_POPULAR) return "Cuando haya likes, las recetas destacadas apareceran aqui.";
+        return "Cuando la comunidad publique recetas apareceran aqui.";
     }
 
     private void setRefreshing(boolean refreshing) {
