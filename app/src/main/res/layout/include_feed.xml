@@ -78,6 +78,65 @@
                     android:inputType="text" />
             </com.google.android.material.textfield.TextInputLayout>
 
+            <LinearLayout
+                android:id="@+id/feedTabs"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_tab_segmented"
+                android:baselineAligned="false"
+                android:orientation="horizontal"
+                android:padding="4dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnFeedForYou"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:text="Para ti"
+                    android:textAllCaps="false"
+                    android:textColor="@color/texto_sobre_principal"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@color/color_principal_variante"
+                    app:cornerRadius="20dp"
+                    app:elevation="0dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnFeedFollowing"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="4dp"
+                    android:layout_weight="1"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:text="Siguiendo"
+                    android:textAllCaps="false"
+                    android:textColor="@color/texto_principal"
+                    android:textSize="12sp"
+                    app:backgroundTint="@color/fondo_superficie"
+                    app:cornerRadius="20dp"
+                    app:elevation="0dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnFeedPopular"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="4dp"
+                    android:layout_weight="1"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:text="Populares"
+                    android:textAllCaps="false"
+                    android:textColor="@color/texto_principal"
+                    android:textSize="12sp"
+                    app:backgroundTint="@color/fondo_superficie"
+                    app:cornerRadius="20dp"
+                    app:elevation="0dp" />
+            </LinearLayout>
+
             <!-- Zona scroll + refresh -->
             <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
                 android:id="@+id/swipeFeed"

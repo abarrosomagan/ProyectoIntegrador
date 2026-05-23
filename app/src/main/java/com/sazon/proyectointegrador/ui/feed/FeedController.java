@@ -14,6 +14,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -22,17 +23,23 @@ import com.sazon.proyectointegrador.ProfileActivity;
 import com.sazon.proyectointegrador.R;
 import com.sazon.proyectointegrador.adapters.PublicacionAdapter;
 import com.sazon.proyectointegrador.model.Publicacion;
+import com.sazon.proyectointegrador.util.FollowRepository;
 import com.sazon.proyectointegrador.util.RecipeRepository;
 import com.sazon.proyectointegrador.util.RecipeStateBus;
 import com.sazon.proyectointegrador.util.SessionManager;
 import com.sazon.proyectointegrador.util.SimpleTextWatcher;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 public class FeedController {
+
+    private static final int MODE_FOR_YOU = 0;
+    private static final int MODE_FOLLOWING = 1;
+    private static final int MODE_POPULAR = 2;
 
     private final AppCompatActivity a;
 
@@ -43,6 +50,7 @@ public class FeedController {
     private TextView tvSaludo;
     private ImageView imgAvatarFeed;
     private ImageButton btnMenuFeed;
+    private MaterialButton btnFeedForYou, btnFeedFollowing, btnFeedPopular;
 
     // Adapter + data
     private PublicacionAdapter feedAdapter;
@@ -54,6 +62,7 @@ public class FeedController {
     // Data source (hoy mock, mañana Firestore)
     private FeedRepository repository;
     private final RecipeStateBus.Listener recipeStateListener = this::onRecipeStateChanged;
+    private int feedMode = MODE_FOR_YOU;
 
     public FeedController(AppCompatActivity activity) {
         this.a = activity;
@@ -69,6 +78,7 @@ public class FeedController {
         setupHeader();
         setupRecycler();
         setupSearch();
+        setupFeedTabs();
         setupRefresh();
         setupMenu();
 
@@ -109,6 +119,9 @@ public class FeedController {
 
         tvSaludo = a.findViewById(R.id.tvSaludo);
         imgAvatarFeed = a.findViewById(R.id.imgAvatarFeed);
+        btnFeedForYou = a.findViewById(R.id.btnFeedForYou);
+        btnFeedFollowing = a.findViewById(R.id.btnFeedFollowing);
+        btnFeedPopular = a.findViewById(R.id.btnFeedPopular);
 
         btnMenuFeed = a.findViewById(R.id.btnMenuFeed); // <- añade este id en el XML (te lo paso abajo)
     }
@@ -171,6 +184,45 @@ public class FeedController {
         swipeFeed.setOnRefreshListener(() -> loadFeed(true));
     }
 
+    private void setupFeedTabs() {
+        if (btnFeedForYou != null) {
+            btnFeedForYou.setOnClickListener(v -> switchFeedMode(MODE_FOR_YOU));
+        }
+        if (btnFeedFollowing != null) {
+            btnFeedFollowing.setOnClickListener(v -> switchFeedMode(MODE_FOLLOWING));
+        }
+        if (btnFeedPopular != null) {
+            btnFeedPopular.setOnClickListener(v -> switchFeedMode(MODE_POPULAR));
+        }
+        paintFeedTabs();
+    }
+
+    private void switchFeedMode(int mode) {
+        if (feedMode == mode) return;
+        feedMode = mode;
+        paintFeedTabs();
+        loadFeed(false);
+    }
+
+    private void paintFeedTabs() {
+        paintFeedTab(btnFeedForYou, feedMode == MODE_FOR_YOU);
+        paintFeedTab(btnFeedFollowing, feedMode == MODE_FOLLOWING);
+        paintFeedTab(btnFeedPopular, feedMode == MODE_POPULAR);
+    }
+
+    private void paintFeedTab(MaterialButton button, boolean selected) {
+        if (button == null) return;
+        button.setTextColor(a.getResources().getColor(selected
+                ? R.color.texto_sobre_principal
+                : R.color.texto_principal));
+        button.setBackgroundTintList(a.getColorStateList(selected
+                ? R.color.color_principal_variante
+                : R.color.fondo_superficie));
+        button.setTypeface(null, selected
+                ? android.graphics.Typeface.BOLD
+                : android.graphics.Typeface.NORMAL);
+    }
+
     private void setupMenu() {
         if (btnMenuFeed == null) return;
 
@@ -201,7 +253,7 @@ public class FeedController {
     private void loadFeed(boolean fromRefresh) {
         setRefreshing(true);
 
-        repository.fetchFeed(new FeedRepository.Callback() {
+        repository.fetchFeed(feedMode, new FeedRepository.Callback() {
             @Override
             public void onSuccess(List<Publicacion> data) {
                 currentData.clear();
@@ -303,7 +355,7 @@ public class FeedController {
             void onError(Exception e);
         }
 
-        void fetchFeed(Callback cb);
+        void fetchFeed(int mode, Callback cb);
         // En el futuro:
         // void listenFeed(Callback cb);
         // void detach();
@@ -313,7 +365,7 @@ public class FeedController {
     public static class MockFeedRepository implements FeedRepository {
 
         @Override
-        public void fetchFeed(Callback cb) {
+        public void fetchFeed(int mode, Callback cb) {
             // Simula “red” para que SwipeRefresh se vea bien
             new Handler(Looper.getMainLooper()).postDelayed(() -> {
                 try {
@@ -381,16 +433,50 @@ public class FeedController {
         private final MockFeedRepository fallback = new MockFeedRepository();
 
         @Override
-        public void fetchFeed(Callback cb) {
-            RecipeRepository.feed(50,
+        public void fetchFeed(int mode, Callback cb) {
+            RecipeRepository.feed(80,
                     list -> {
                         if (list == null || list.isEmpty()) {
-                            fallback.fetchFeed(cb);
+                            fallback.fetchFeed(mode, cb);
                         } else {
-                            marcarEstadoUsuario(list, cb);
+                            filtrarModo(mode, list, cb);
                         }
                     },
                     cb::onError);
+        }
+
+        private void filtrarModo(int mode, List<Publicacion> list, Callback cb) {
+            if (mode == MODE_POPULAR) {
+                Collections.sort(list, (a, b) -> {
+                    int byLikes = Integer.compare(b.getLikes(), a.getLikes());
+                    if (byLikes != 0) return byLikes;
+                    return Long.compare(b.getCreatedAt(), a.getCreatedAt());
+                });
+                marcarEstadoUsuario(list, cb);
+                return;
+            }
+
+            if (mode == MODE_FOLLOWING) {
+                String uid = SessionManager.currentUid();
+                if (uid == null) {
+                    cb.onSuccess(new ArrayList<>());
+                    return;
+                }
+                FollowRepository.followingIds(uid,
+                        followingIds -> {
+                            ArrayList<Publicacion> filtered = new ArrayList<>();
+                            for (Publicacion p : list) {
+                                if (p.getAuthorId() != null && followingIds.contains(p.getAuthorId())) {
+                                    filtered.add(p);
+                                }
+                            }
+                            marcarEstadoUsuario(filtered, cb);
+                        },
+                        cb::onError);
+                return;
+            }
+
+            marcarEstadoUsuario(list, cb);
         }
 
         private void marcarEstadoUsuario(List<Publicacion> list, Callback cb) {

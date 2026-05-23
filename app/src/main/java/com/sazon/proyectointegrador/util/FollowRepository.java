@@ -9,8 +9,10 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.WriteBatch;
 
+import java.util.HashSet;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Sistema de seguidores / siguiendo en Firestore.
@@ -88,6 +90,27 @@ public final class FollowRepository {
                 .document(otherUid)
                 .get()
                 .addOnSuccessListener(snap -> onOk.onSuccess(snap != null && snap.exists()))
+                .addOnFailureListener(e -> { if (onErr != null) onErr.onFailure(e); });
+    }
+
+    /** IDs de usuarios a los que sigue {uid}. */
+    public static void followingIds(@NonNull String uid,
+                                    @NonNull OnSuccessListener<Set<String>> onOk,
+                                    OnFailureListener onErr) {
+        SessionManager.db()
+                .collection(SessionManager.COLLECTION_USERS)
+                .document(uid)
+                .collection(SUB_FOLLOWING)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    Set<String> ids = new HashSet<>();
+                    if (snap != null) {
+                        for (DocumentSnapshot doc : snap.getDocuments()) {
+                            ids.add(doc.getId());
+                        }
+                    }
+                    onOk.onSuccess(ids);
+                })
                 .addOnFailureListener(e -> { if (onErr != null) onErr.onFailure(e); });
     }
 }
