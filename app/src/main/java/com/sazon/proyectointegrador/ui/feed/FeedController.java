@@ -27,7 +27,9 @@ import com.sazon.proyectointegrador.util.SessionManager;
 import com.sazon.proyectointegrador.util.SimpleTextWatcher;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class FeedController {
 
@@ -380,17 +382,33 @@ public class FeedController {
             }
 
             RecipeRepository.savedIds(uid,
-                    savedIds -> RecipeRepository.likedIds(uid,
-                            likedIds -> {
-                                for (Publicacion p : list) {
-                                    String id = p.getId();
-                                    p.setGuardada(id != null && savedIds.contains(id));
-                                    p.setLiked(id != null && likedIds.contains(id));
-                                }
-                                cb.onSuccess(list);
-                            },
-                            cb::onError),
-                    cb::onError);
+                    savedIds -> marcarLikesUsuario(uid, list, savedIds, cb),
+                    e -> marcarLikesUsuario(uid, list, new HashSet<>(), cb));
+        }
+
+        private void marcarLikesUsuario(String uid,
+                                        List<Publicacion> list,
+                                        Set<String> savedIds,
+                                        Callback cb) {
+            RecipeRepository.likedIds(uid,
+                    likedIds -> {
+                        aplicarEstadoUsuario(list, savedIds, likedIds);
+                        cb.onSuccess(list);
+                    },
+                    e -> {
+                        aplicarEstadoUsuario(list, savedIds, new HashSet<>());
+                        cb.onSuccess(list);
+                    });
+        }
+
+        private void aplicarEstadoUsuario(List<Publicacion> list,
+                                          Set<String> savedIds,
+                                          Set<String> likedIds) {
+            for (Publicacion p : list) {
+                String id = p.getId();
+                p.setGuardada(id != null && savedIds.contains(id));
+                p.setLiked(id != null && likedIds.contains(id));
+            }
         }
     }
 }
