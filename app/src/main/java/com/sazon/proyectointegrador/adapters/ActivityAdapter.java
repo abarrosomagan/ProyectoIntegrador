@@ -16,10 +16,16 @@ import java.util.ArrayList;
 
 public class ActivityAdapter extends RecyclerView.Adapter<ActivityAdapter.VH> {
 
-    private final ArrayList<ActivityItem> data;
+    public interface OnActivityClick {
+        void onActivityClick(ActivityItem item);
+    }
 
-    public ActivityAdapter(ArrayList<ActivityItem> data) {
+    private final ArrayList<ActivityItem> data;
+    private final OnActivityClick listener;
+
+    public ActivityAdapter(ArrayList<ActivityItem> data, OnActivityClick listener) {
         this.data = data;
+        this.listener = listener;
     }
 
     @NonNull
@@ -37,6 +43,9 @@ public class ActivityAdapter extends RecyclerView.Adapter<ActivityAdapter.VH> {
         h.tvMessage.setText(item.getMessage() == null ? "" : item.getMessage());
         h.tvMeta.setText(metaFor(item));
         h.unreadDot.setVisibility(item.isRead() ? View.GONE : View.VISIBLE);
+        h.itemView.setOnClickListener(v -> {
+            if (listener != null) listener.onActivityClick(item);
+        });
     }
 
     @Override

@@ -1,5 +1,6 @@
 package com.sazon.proyectointegrador;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageButton;
@@ -37,7 +38,7 @@ public class ActivityActivity extends AppCompatActivity {
         empty = findViewById(R.id.emptyActivity);
         if (rv != null) {
             rv.setLayoutManager(new LinearLayoutManager(this));
-            adapter = new ActivityAdapter(new ArrayList<>());
+            adapter = new ActivityAdapter(new ArrayList<>(), this::openActivityTarget);
             rv.setAdapter(adapter);
         }
 
@@ -82,6 +83,33 @@ public class ActivityActivity extends AppCompatActivity {
         ActivityRepository.markAllRead(uid,
                 v -> Toast.makeText(this, "Actividad marcada como leida", Toast.LENGTH_SHORT).show(),
                 e -> Toast.makeText(this, "No se pudo actualizar", Toast.LENGTH_SHORT).show());
+    }
+
+    private void openActivityTarget(ActivityItem item) {
+        if (item == null) return;
+        String type = item.getType();
+        if (ActivityRepository.TYPE_FOLLOW.equals(type)) {
+            openActorProfile(item);
+            return;
+        }
+        String recipeId = item.getRecipeId();
+        if (recipeId != null && !recipeId.trim().isEmpty()) {
+            Intent i = new Intent(this, RecipeDetailActivity.class);
+            i.putExtra(RecipeDetailActivity.EXTRA_RECIPE_ID, recipeId);
+            startActivity(i);
+        } else {
+            openActorProfile(item);
+        }
+    }
+
+    private void openActorProfile(ActivityItem item) {
+        String actorId = item.getActorId();
+        if (actorId == null || actorId.trim().isEmpty()) return;
+        Intent i = new Intent(this, ProfileActivity.class);
+        i.putExtra(ProfileActivity.EXTRA_USER_ID, actorId);
+        i.putExtra(ProfileActivity.EXTRA_USERNAME, item.getActorName());
+        i.putExtra(ProfileActivity.EXTRA_IS_OWN_PROFILE, false);
+        startActivity(i);
     }
 
     @Override
