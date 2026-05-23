@@ -399,6 +399,16 @@ async function seedLikes() {
       `recipes/${recipeId}/likes/${user.uid}`,
       {
         uid: user.uid,
+        recipeId,
+        createdAt: now - hours(4),
+      },
+      user.idToken
+    );
+    await setDoc(
+      `users/${user.uid}/liked/${recipeId}`,
+      {
+        uid: user.uid,
+        recipeId,
         createdAt: now - hours(4),
       },
       user.idToken

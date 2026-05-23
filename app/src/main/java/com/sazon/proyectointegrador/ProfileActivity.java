@@ -126,6 +126,8 @@ public class ProfileActivity extends AppCompatActivity {
         // Pestañas: en perfil ajeno solo mostramos "Mis recetas" (sin guardadas).
         View btnTabSaved = findViewById(R.id.btnTabSaved);
         if (btnTabSaved != null) btnTabSaved.setVisibility(View.GONE);
+        View btnTabLiked = findViewById(R.id.btnTabLiked);
+        if (btnTabLiked != null) btnTabLiked.setVisibility(View.GONE);
     }
 
     private void setupRecycler() {

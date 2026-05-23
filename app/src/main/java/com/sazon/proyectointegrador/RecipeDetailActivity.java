@@ -188,7 +188,13 @@ public class RecipeDetailActivity extends AppCompatActivity {
 
     private void pintarBotonGuardar() {
         if (btnSave == null) return;
-        btnSave.setText(guardada ? "Guardada ⭐" : "Guardar");
+        btnSave.setText(guardada ? "Guardada" : "Guardar");
+        btnSave.setIconResource(guardada
+                ? R.drawable.ic_bookmark_filled
+                : R.drawable.ic_bookmark);
+        btnSave.setIconTintResource(guardada
+                ? R.color.color_guardado
+                : R.color.color_principal_variante);
     }
 
     private void cargarEstadoLike() {
@@ -205,7 +211,13 @@ public class RecipeDetailActivity extends AppCompatActivity {
 
     private void pintarBotonLike() {
         if (btnLike == null || receta == null) return;
-        btnLike.setText((liked ? "♥ " : "♡ ") + receta.getLikes());
+        btnLike.setText(String.valueOf(receta.getLikes()));
+        btnLike.setIconResource(liked
+                ? R.drawable.ic_heart_filled
+                : R.drawable.ic_heart_outline);
+        btnLike.setIconTintResource(liked
+                ? R.color.color_like
+                : R.color.color_principal_variante);
     }
 
     private void escucharComentarios() {

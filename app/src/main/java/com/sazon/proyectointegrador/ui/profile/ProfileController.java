@@ -42,6 +42,10 @@ import java.util.Set;
 
 public class ProfileController {
 
+    private static final int TAB_MY = 0;
+    private static final int TAB_SAVED = 1;
+    private static final int TAB_LIKED = 2;
+
     private final AppCompatActivity a;
 
     private TextView tvAvatar, tvUsername, tvUserHandle, tvBio, tvChefRank;
@@ -49,7 +53,7 @@ public class ProfileController {
     private View cardProfileHeader;
     private TextView tvStatRecipes, tvStatFollowers, tvStatFollowing;
 
-    private MaterialButton btnEdit, btnShare, btnFollow, btnTabMy, btnTabSaved;
+    private MaterialButton btnEdit, btnShare, btnFollow, btnTabMy, btnTabSaved, btnTabLiked;
     private ImageButton btnMore;
 
     private RecyclerView rv;
@@ -62,13 +66,14 @@ public class ProfileController {
 
     private final ArrayList<Publicacion> my = new ArrayList<>();
     private final ArrayList<Publicacion> saved = new ArrayList<>();
+    private final ArrayList<Publicacion> liked = new ArrayList<>();
     private final Set<String> savedIds = new HashSet<>();
     private final Set<String> likedIds = new HashSet<>();
 
     // Caché del perfil actual (lo que se ve en la UI)
     private String nombreActual = "";
     private String bioActual = "";
-    private boolean showingMyTab = true;
+    private int currentTab = TAB_MY;
 
     private AvatarHelper avatarHelper;
     private final RecipeStateBus.Listener recipeStateListener = this::onRecipeStateChanged;
@@ -90,7 +95,7 @@ public class ProfileController {
         // En mi propio perfil, el botón "Seguir" no tiene sentido.
         if (btnFollow != null) btnFollow.setVisibility(View.GONE);
 
-        paintTabs(true);
+        paintTabs(TAB_MY);
         cargarPerfilDesdeFirestore();
         cargarRecetas();
     }
@@ -131,6 +136,7 @@ public class ProfileController {
         btnFollow = a.findViewById(R.id.btnFollow);
         btnTabMy = a.findViewById(R.id.btnTabMyRecipes);
         btnTabSaved = a.findViewById(R.id.btnTabSaved);
+        btnTabLiked = a.findViewById(R.id.btnTabLiked);
 
         rv = a.findViewById(R.id.rvProfileList);
         swipeProfile = a.findViewById(R.id.swipeProfile);
@@ -196,8 +202,9 @@ public class ProfileController {
     }
 
     private void setupListeners() {
-        if (btnTabMy != null) btnTabMy.setOnClickListener(v -> { paintTabs(true); showMy(); });
-        if (btnTabSaved != null) btnTabSaved.setOnClickListener(v -> { paintTabs(false); showSaved(); });
+        if (btnTabMy != null) btnTabMy.setOnClickListener(v -> { paintTabs(TAB_MY); showMy(); });
+        if (btnTabSaved != null) btnTabSaved.setOnClickListener(v -> { paintTabs(TAB_SAVED); showSaved(); });
+        if (btnTabLiked != null) btnTabLiked.setOnClickListener(v -> { paintTabs(TAB_LIKED); showLiked(); });
 
         if (btnEdit != null) btnEdit.setOnClickListener(v -> mostrarDialogoEditarPerfil());
 
@@ -326,7 +333,7 @@ public class ProfileController {
                         tvStatRecipes.setText(String.valueOf(my.size()));
                     if (tvChefRank != null)
                         tvChefRank.setText(chefRankFor(my.size()));
-                    if (showingMyTab) showMy();
+                    if (currentTab == TAB_MY) showMy();
                     if (swipeProfile != null) swipeProfile.setRefreshing(false);
                 },
                 e -> {
@@ -345,7 +352,21 @@ public class ProfileController {
                     } else if (com.sazon.proyectointegrador.util.DemoData.ENABLED) {
                         saved.addAll(com.sazon.proyectointegrador.util.DemoData.recetasGuardadas());
                     }
-                    if (!showingMyTab) showSaved();
+                    if (currentTab == TAB_SAVED) showSaved();
+                },
+                e -> { /* idem */ });
+
+        RecipeRepository.likedBy(uid,
+                list -> {
+                    liked.clear();
+                    if (list != null && !list.isEmpty()) {
+                        for (Publicacion p : list) {
+                            aplicarEstadoUsuario(p);
+                            p.setLiked(true);
+                            liked.add(p);
+                        }
+                    }
+                    if (currentTab == TAB_LIKED) showLiked();
                 },
                 e -> { /* idem */ });
     }
@@ -368,6 +389,7 @@ public class ProfileController {
 
         boolean changedMy = applyStateToList(my, state);
         boolean changedSaved = applyStateToList(saved, state);
+        boolean changedLiked = applyStateToList(liked, state);
 
         if (state.saved != null && state.recipe != null) {
             if (state.saved && !containsRecipe(saved, state.recipeId)) {
@@ -381,8 +403,21 @@ public class ProfileController {
             }
         }
 
-        if (showingMyTab && changedMy) showMy();
-        if (!showingMyTab && changedSaved) showSaved();
+        if (state.liked != null && state.recipe != null) {
+            if (state.liked && !containsRecipe(liked, state.recipeId)) {
+                Publicacion copy = state.recipe;
+                RecipeStateBus.apply(copy, state);
+                copy.setLiked(true);
+                liked.add(0, copy);
+                changedLiked = true;
+            } else if (!state.liked) {
+                changedLiked = removeRecipe(liked, state.recipeId) || changedLiked;
+            }
+        }
+
+        if (currentTab == TAB_MY && changedMy) showMy();
+        if (currentTab == TAB_SAVED && changedSaved) showSaved();
+        if (currentTab == TAB_LIKED && changedLiked) showLiked();
     }
 
     private boolean applyStateToList(List<Publicacion> list, RecipeStateBus.RecipeState state) {
@@ -541,6 +576,7 @@ public class ProfileController {
     private void loadMock() {
         my.clear();
         saved.clear();
+        liked.clear();
 
         if (com.sazon.proyectointegrador.util.DemoData.ENABLED) {
             my.addAll(com.sazon.proyectointegrador.util.DemoData.recetasPropias());
@@ -555,39 +591,50 @@ public class ProfileController {
     }
 
     private void showMy() {
-        showingMyTab = true;
+        currentTab = TAB_MY;
         if (adapter != null) adapter.updateData(new ArrayList<>(my));
-        updateEmpty(my, true);
+        updateEmpty(my, TAB_MY);
     }
 
     private void showSaved() {
-        showingMyTab = false;
+        currentTab = TAB_SAVED;
         if (adapter != null) adapter.updateData(new ArrayList<>(saved));
-        updateEmpty(saved, false);
+        updateEmpty(saved, TAB_SAVED);
     }
 
-    private void paintTabs(boolean myTab) {
-        if (btnTabMy == null || btnTabSaved == null) return;
-
-        if (myTab) {
-            btnTabMy.setTextColor(a.getResources().getColor(R.color.texto_sobre_principal));
-            btnTabMy.setBackgroundTintList(a.getColorStateList(R.color.color_principal_variante));
-
-            btnTabSaved.setTextColor(a.getResources().getColor(R.color.texto_principal));
-            btnTabSaved.setBackgroundTintList(a.getColorStateList(R.color.fondo_superficie));
-        } else {
-            btnTabSaved.setTextColor(a.getResources().getColor(R.color.texto_sobre_principal));
-            btnTabSaved.setBackgroundTintList(a.getColorStateList(R.color.color_principal_variante));
-
-            btnTabMy.setTextColor(a.getResources().getColor(R.color.texto_principal));
-            btnTabMy.setBackgroundTintList(a.getColorStateList(R.color.fondo_superficie));
-        }
+    private void showLiked() {
+        currentTab = TAB_LIKED;
+        if (adapter != null) adapter.updateData(new ArrayList<>(liked));
+        updateEmpty(liked, TAB_LIKED);
     }
 
-    private void updateEmpty(List<Publicacion> data, boolean myTab) {
+    private void paintTabs(int tab) {
+        if (btnTabMy == null || btnTabSaved == null || btnTabLiked == null) return;
+
+        paintTabButton(btnTabMy, tab == TAB_MY, R.drawable.ic_grid);
+        paintTabButton(btnTabSaved, tab == TAB_SAVED, R.drawable.ic_bookmark);
+        paintTabButton(btnTabLiked, tab == TAB_LIKED,
+                tab == TAB_LIKED ? R.drawable.ic_heart_filled : R.drawable.ic_heart_outline);
+    }
+
+    private void paintTabButton(MaterialButton button, boolean selected, int iconRes) {
+        button.setTextColor(a.getResources().getColor(selected
+                ? R.color.texto_sobre_principal
+                : R.color.texto_principal));
+        button.setBackgroundTintList(a.getColorStateList(selected
+                ? R.color.color_principal_variante
+                : R.color.fondo_superficie));
+        button.setIconResource(iconRes);
+        button.setIconTintResource(selected
+                ? R.color.texto_sobre_principal
+                : R.color.texto_principal);
+    }
+
+    private void updateEmpty(List<Publicacion> data, int tab) {
         if (emptyState == null || rv == null) return;
 
         boolean empty = data == null || data.isEmpty();
+        boolean myTab = tab == TAB_MY;
 
         if (!empty) {
             emptyState.setVisibility(View.GONE);
@@ -599,8 +646,13 @@ public class ProfileController {
         rv.setVisibility(View.GONE);
         emptyState.setVisibility(View.VISIBLE);
 
-        if (tvEmptyTitle != null) tvEmptyTitle.setText(myTab ? "Aún no has publicado recetas" : "No tienes recetas guardadas");
-        if (tvEmptySubtitle != null) tvEmptySubtitle.setText(myTab ? "Cuando publiques, aparecerán aquí." : "Guarda recetas para verlas aquí.");
+        if (tab == TAB_LIKED) {
+            if (tvEmptyTitle != null) tvEmptyTitle.setText("No has dado me gusta todavia");
+            if (tvEmptySubtitle != null) tvEmptySubtitle.setText("Las recetas que marques con corazon apareceran aqui.");
+        } else {
+            if (tvEmptyTitle != null) tvEmptyTitle.setText(myTab ? "Aun no has publicado recetas" : "No tienes recetas guardadas");
+            if (tvEmptySubtitle != null) tvEmptySubtitle.setText(myTab ? "Cuando publiques, apareceran aqui." : "Guarda recetas para verlas aqui.");
+        }
 
         if (btnEmptyAction != null) {
             if (myTab) {

@@ -35,6 +35,7 @@ public final class RecipeRepository {
 
     public static final String COLLECTION_RECIPES = "recipes";
     public static final String SUBCOLLECTION_LIKES = "likes";
+    public static final String SUBCOLLECTION_LIKED = "liked";
     public static final String SUBCOLLECTION_SAVED = "saved";
     public static final String SUBCOLLECTION_COMMENTS = "comments";
 
@@ -162,17 +163,25 @@ public final class RecipeRepository {
                 .collection(COLLECTION_RECIPES).document(recipeId);
         DocumentReference likeRef = recipeRef
                 .collection(SUBCOLLECTION_LIKES).document(uid);
+        DocumentReference userLikedRef = SessionManager.db()
+                .collection(SessionManager.COLLECTION_USERS)
+                .document(uid)
+                .collection(SUBCOLLECTION_LIKED)
+                .document(recipeId);
 
         WriteBatch batch = SessionManager.db().batch();
 
         if (like) {
             Map<String, Object> data = new HashMap<>();
             data.put("uid", uid);
+            data.put("recipeId", recipeId);
             data.put("createdAt", System.currentTimeMillis());
             batch.set(likeRef, data);
+            batch.set(userLikedRef, data);
             batch.update(recipeRef, "likes", FieldValue.increment(1));
         } else {
             batch.delete(likeRef);
+            batch.delete(userLikedRef);
             batch.update(recipeRef, "likes", FieldValue.increment(-1));
         }
 
@@ -186,6 +195,25 @@ public final class RecipeRepository {
                                 @NonNull OnSuccessListener<Set<String>> onOk,
                                 @NonNull OnFailureListener onErr) {
         SessionManager.db()
+                .collection(SessionManager.COLLECTION_USERS)
+                .document(uid)
+                .collection(SUBCOLLECTION_LIKED)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    Set<String> ids = new HashSet<>();
+                    for (DocumentSnapshot doc : snap.getDocuments()) {
+                        ids.add(doc.getId());
+                    }
+                    if (!ids.isEmpty()) onOk.onSuccess(ids);
+                    else likedIdsFromRecipes(uid, onOk, onErr);
+                })
+                .addOnFailureListener(onErr);
+    }
+
+    private static void likedIdsFromRecipes(@NonNull String uid,
+                                            @NonNull OnSuccessListener<Set<String>> onOk,
+                                            @NonNull OnFailureListener onErr) {
+        SessionManager.db()
                 .collectionGroup(SUBCOLLECTION_LIKES)
                 .whereEqualTo("uid", uid)
                 .get()
@@ -198,6 +226,15 @@ public final class RecipeRepository {
                     onOk.onSuccess(ids);
                 })
                 .addOnFailureListener(onErr);
+    }
+
+    /** Recetas a las que el usuario dio like. */
+    public static void likedBy(@NonNull String uid,
+                               @NonNull OnSuccessListener<List<Publicacion>> onOk,
+                               @NonNull OnFailureListener onErr) {
+        likedIds(uid,
+                ids -> loadRecipesByIds(new ArrayList<>(ids), onOk),
+                onErr);
     }
 
     public static void updateRecipe(@NonNull String recipeId,
@@ -226,12 +263,26 @@ public final class RecipeRepository {
                                @NonNull OnSuccessListener<Boolean> onOk,
                                @NonNull OnFailureListener onErr) {
         SessionManager.db()
-                .collection(COLLECTION_RECIPES)
-                .document(recipeId)
-                .collection(SUBCOLLECTION_LIKES)
+                .collection(SessionManager.COLLECTION_USERS)
                 .document(uid)
+                .collection(SUBCOLLECTION_LIKED)
+                .document(recipeId)
                 .get()
-                .addOnSuccessListener(doc -> onOk.onSuccess(doc != null && doc.exists()))
+                .addOnSuccessListener(doc -> {
+                    if (doc != null && doc.exists()) {
+                        onOk.onSuccess(true);
+                        return;
+                    }
+                    SessionManager.db()
+                            .collection(COLLECTION_RECIPES)
+                            .document(recipeId)
+                            .collection(SUBCOLLECTION_LIKES)
+                            .document(uid)
+                            .get()
+                            .addOnSuccessListener(oldDoc ->
+                                    onOk.onSuccess(oldDoc != null && oldDoc.exists()))
+                            .addOnFailureListener(onErr);
+                })
                 .addOnFailureListener(onErr);
     }
 
@@ -339,5 +390,36 @@ public final class RecipeRepository {
             }
         }
         return list;
+    }
+
+    private static void loadRecipesByIds(List<String> ids,
+                                         OnSuccessListener<List<Publicacion>> onOk) {
+        if (ids == null || ids.isEmpty()) {
+            onOk.onSuccess(new ArrayList<>());
+            return;
+        }
+        final List<Publicacion> result = new ArrayList<>();
+        final int[] pending = { ids.size() };
+        for (String recipeId : ids) {
+            SessionManager.db()
+                    .collection(COLLECTION_RECIPES)
+                    .document(recipeId)
+                    .get()
+                    .addOnCompleteListener(t -> {
+                        if (t.isSuccessful() && t.getResult() != null && t.getResult().exists()) {
+                            Publicacion p = t.getResult().toObject(Publicacion.class);
+                            if (p != null) {
+                                p.setId(t.getResult().getId());
+                                result.add(p);
+                            }
+                        }
+                        pending[0]--;
+                        if (pending[0] == 0) {
+                            Collections.sort(result, (a, b) ->
+                                    Long.compare(b.getCreatedAt(), a.getCreatedAt()));
+                            onOk.onSuccess(result);
+                        }
+                    });
+        }
     }
 }
