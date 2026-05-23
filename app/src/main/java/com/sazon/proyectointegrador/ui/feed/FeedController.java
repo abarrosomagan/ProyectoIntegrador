@@ -63,6 +63,9 @@ public class FeedController {
     private FeedRepository repository;
     private final RecipeStateBus.Listener recipeStateListener = this::onRecipeStateChanged;
     private int feedMode = MODE_FOR_YOU;
+    private final Handler searchHandler = new Handler(Looper.getMainLooper());
+    private Runnable pendingSearch;
+    private int searchGeneration = 0;
 
     public FeedController(AppCompatActivity activity) {
         this.a = activity;
@@ -93,6 +96,7 @@ public class FeedController {
 
     public void onDestroy() {
         RecipeStateBus.unregister(recipeStateListener);
+        if (pendingSearch != null) searchHandler.removeCallbacks(pendingSearch);
         // Aquí en el futuro: repository.detach() para ListenerRegistration de Firestore
         // repository.detach();
     }
@@ -173,7 +177,39 @@ public class FeedController {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 String query = (s != null) ? s.toString().trim() : "";
+                scheduleSearch(query);
+            }
+        });
+    }
+
+    private void scheduleSearch(String query) {
+        if (pendingSearch != null) searchHandler.removeCallbacks(pendingSearch);
+        pendingSearch = () -> runSearch(query);
+        searchHandler.postDelayed(pendingSearch, query != null && query.length() >= 2 ? 250 : 0);
+    }
+
+    private void runSearch(String query) {
+        if (query == null || query.trim().length() < 2) {
+            searchGeneration++;
+            applySearch(query);
+            return;
+        }
+
+        int generation = ++searchGeneration;
+        setRefreshing(true);
+        repository.searchFeed(query.trim(), new FeedRepository.Callback() {
+            @Override
+            public void onSuccess(List<Publicacion> data) {
+                if (generation != searchGeneration) return;
+                if (feedAdapter != null) feedAdapter.updateData(new ArrayList<>(data));
+                setRefreshing(false);
+            }
+
+            @Override
+            public void onError(Exception e) {
+                if (generation != searchGeneration) return;
                 applySearch(query);
+                setRefreshing(false);
             }
         });
     }
@@ -201,6 +237,7 @@ public class FeedController {
         if (feedMode == mode) return;
         feedMode = mode;
         paintFeedTabs();
+        searchGeneration++;
         loadFeed(false);
     }
 
@@ -356,6 +393,7 @@ public class FeedController {
         }
 
         void fetchFeed(int mode, Callback cb);
+        void searchFeed(String query, Callback cb);
         // En el futuro:
         // void listenFeed(Callback cb);
         // void detach();
@@ -374,6 +412,21 @@ public class FeedController {
                     cb.onError(e);
                 }
             }, 350);
+        }
+
+        @Override
+        public void searchFeed(String query, Callback cb) {
+            fetchFeed(MODE_FOR_YOU, new Callback() {
+                @Override
+                public void onSuccess(List<Publicacion> data) {
+                    cb.onSuccess(filterByQuery(data, query));
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    cb.onError(e);
+                }
+            });
         }
 
         private List<Publicacion> crearMockPublicaciones() {
@@ -442,6 +495,13 @@ public class FeedController {
                             filtrarModo(mode, list, cb);
                         }
                     },
+                    cb::onError);
+        }
+
+        @Override
+        public void searchFeed(String query, Callback cb) {
+            RecipeRepository.feed(150,
+                    list -> marcarEstadoUsuario(filterByQuery(list, query), cb),
                     cb::onError);
         }
 
@@ -515,5 +575,20 @@ public class FeedController {
                 p.setLiked(id != null && likedIds.contains(id));
             }
         }
+    }
+
+    private static ArrayList<Publicacion> filterByQuery(List<Publicacion> data, String query) {
+        ArrayList<Publicacion> filtered = new ArrayList<>();
+        if (data == null) return filtered;
+        String q = query == null ? "" : query.trim().toLowerCase();
+        for (Publicacion p : data) {
+            String title = (p.getTitulo() != null) ? p.getTitulo().toLowerCase() : "";
+            String desc = (p.getDescripcion() != null) ? p.getDescripcion().toLowerCase() : "";
+            String author = (p.getAutor() != null) ? p.getAutor().toLowerCase() : "";
+            if (title.contains(q) || desc.contains(q) || author.contains(q)) {
+                filtered.add(p);
+            }
+        }
+        return filtered;
     }
 }
