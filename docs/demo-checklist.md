@@ -81,6 +81,9 @@ El script `scripts/seed-demo.mjs` prepara estos datos mínimos.
 - Guardado aparece en perfil.
 - Seguir actualiza contador.
 - Lista de seguidores abre.
+- Explorar abre recetas y chefs.
+- Actividad muestra eventos y contador.
+- Desde Explorar se puede seguir a un chef.
 - Ajustes abre la cuenta y permite cerrar sesion.
 - Chat envía y recibe.
 - Indicador de escribiendo aparece entre dos sesiones.

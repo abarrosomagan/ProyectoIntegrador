@@ -7,6 +7,9 @@ public class UserListItem {
     private String email;
     private String bio;
     private String avatarUrl;
+    private long recipes;
+    private long followers;
+    private boolean following;
 
     public UserListItem() {
     }
@@ -33,6 +36,12 @@ public class UserListItem {
 
     public String getAvatarUrl() { return avatarUrl; }
 
+    public long getRecipes() { return recipes; }
+
+    public long getFollowers() { return followers; }
+
+    public boolean isFollowing() { return following; }
+
     public void setUid(String uid) { this.uid = uid; }
 
     public void setName(String name) { this.name = name; }
@@ -42,6 +51,12 @@ public class UserListItem {
     public void setBio(String bio) { this.bio = bio; }
 
     public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
+
+    public void setRecipes(long recipes) { this.recipes = recipes; }
+
+    public void setFollowers(long followers) { this.followers = followers; }
+
+    public void setFollowing(boolean following) { this.following = following; }
 
     public String displayName() {
         if (name != null && !name.trim().isEmpty()) return name.trim();

@@ -19,11 +19,13 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.sazon.proyectointegrador.LoginActivity;
 import com.sazon.proyectointegrador.ProfileActivity;
 import com.sazon.proyectointegrador.R;
 import com.sazon.proyectointegrador.adapters.PublicacionAdapter;
 import com.sazon.proyectointegrador.model.Publicacion;
+import com.sazon.proyectointegrador.util.ActivityRepository;
 import com.sazon.proyectointegrador.util.FollowRepository;
 import com.sazon.proyectointegrador.util.RecipeRepository;
 import com.sazon.proyectointegrador.util.RecipeStateBus;
@@ -54,6 +56,7 @@ public class FeedController {
     private ImageView imgAvatarFeed;
     private ImageButton btnMenuFeed;
     private MaterialButton btnFeedForYou, btnFeedFollowing, btnFeedPopular;
+    private MaterialButton btnHeaderExplore, btnHeaderActivity;
 
     // Adapter + data
     private PublicacionAdapter feedAdapter;
@@ -61,6 +64,7 @@ public class FeedController {
 
     // Firebase
     private FirebaseAuth firebaseAuth;
+    private ListenerRegistration activityRegistration;
 
     // Data source (hoy mock, mañana Firestore)
     private FeedRepository repository;
@@ -85,10 +89,12 @@ public class FeedController {
         setupRecycler();
         setupSearch();
         setupFeedTabs();
+        setupHeaderActions();
         setupRefresh();
         setupMenu();
 
         RecipeStateBus.register(recipeStateListener);
+        listenUnreadActivity();
         loadFeed(false);
     }
 
@@ -100,6 +106,10 @@ public class FeedController {
     public void onDestroy() {
         RecipeStateBus.unregister(recipeStateListener);
         if (pendingSearch != null) searchHandler.removeCallbacks(pendingSearch);
+        if (activityRegistration != null) {
+            activityRegistration.remove();
+            activityRegistration = null;
+        }
         // Aquí en el futuro: repository.detach() para ListenerRegistration de Firestore
         // repository.detach();
     }
@@ -132,6 +142,8 @@ public class FeedController {
         btnFeedForYou = a.findViewById(R.id.btnFeedForYou);
         btnFeedFollowing = a.findViewById(R.id.btnFeedFollowing);
         btnFeedPopular = a.findViewById(R.id.btnFeedPopular);
+        btnHeaderExplore = a.findViewById(R.id.btnHeaderExplore);
+        btnHeaderActivity = a.findViewById(R.id.btnHeaderActivity);
 
         btnMenuFeed = a.findViewById(R.id.btnMenuFeed); // <- añade este id en el XML (te lo paso abajo)
     }
@@ -157,6 +169,38 @@ public class FeedController {
         if (imgAvatarFeed != null) {
             // placeholder ya está en xml
         }
+    }
+
+    private void setupHeaderActions() {
+        if (btnHeaderExplore != null) {
+            btnHeaderExplore.setOnClickListener(v -> a.startActivity(new Intent(a,
+                    com.sazon.proyectointegrador.ExploreActivity.class)));
+        }
+        if (btnHeaderActivity != null) {
+            btnHeaderActivity.setOnClickListener(v -> a.startActivity(new Intent(a,
+                    com.sazon.proyectointegrador.ActivityActivity.class)));
+        }
+    }
+
+    private void listenUnreadActivity() {
+        String uid = SessionManager.currentUid();
+        if (uid == null || btnHeaderActivity == null) return;
+
+        activityRegistration = ActivityRepository.query(uid)
+                .addSnapshotListener((snap, e) -> {
+                    if (snap == null || e != null) {
+                        btnHeaderActivity.setText("0");
+                        return;
+                    }
+                    int unread = 0;
+                    for (com.google.firebase.firestore.DocumentSnapshot doc : snap.getDocuments()) {
+                        Boolean read = doc.getBoolean("read");
+                        if (read == null || !read) unread++;
+                    }
+                    btnHeaderActivity.setText(String.valueOf(unread));
+                    btnHeaderActivity.setContentDescription(
+                            unread == 1 ? "1 actividad sin leer" : unread + " actividades sin leer");
+                });
     }
 
     private void setupRecycler() {

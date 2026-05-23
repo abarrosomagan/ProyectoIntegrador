@@ -22,12 +22,17 @@ import com.sazon.proyectointegrador.adapters.PublicacionAdapter;
 import com.sazon.proyectointegrador.adapters.UserListAdapter;
 import com.sazon.proyectointegrador.model.Publicacion;
 import com.sazon.proyectointegrador.model.UserListItem;
+import com.sazon.proyectointegrador.util.ActivityRepository;
+import com.sazon.proyectointegrador.util.FollowRepository;
 import com.sazon.proyectointegrador.util.RecipeRepository;
 import com.sazon.proyectointegrador.util.SessionManager;
 import com.sazon.proyectointegrador.util.SimpleTextWatcher;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class ExploreActivity extends AppCompatActivity {
 
@@ -47,6 +52,7 @@ public class ExploreActivity extends AppCompatActivity {
     private int generation = 0;
     private final ArrayList<Publicacion> recipes = new ArrayList<>();
     private final ArrayList<UserListItem> chefs = new ArrayList<>();
+    private final Set<String> followingIds = new HashSet<>();
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -79,7 +85,7 @@ public class ExploreActivity extends AppCompatActivity {
         recipeAdapter = new PublicacionAdapter(new ArrayList<>(),
                 this::openRecipe,
                 this::openAuthor);
-        userAdapter = new UserListAdapter(new ArrayList<>(), this::openUser);
+        userAdapter = new UserListAdapter(new ArrayList<>(), this::openUser, this::toggleFollow);
         rv.setAdapter(recipeAdapter);
     }
 
@@ -129,6 +135,7 @@ public class ExploreActivity extends AppCompatActivity {
     private void loadInitialData() {
         loadRecipes();
         loadChefs();
+        loadFollowingIds();
     }
 
     private void loadRecipes() {
@@ -160,13 +167,38 @@ public class ExploreActivity extends AppCompatActivity {
     }
 
     private UserListItem parseUser(DocumentSnapshot doc) {
-        return new UserListItem(
+        UserListItem user = new UserListItem(
                 doc.getId(),
                 doc.getString("name"),
                 doc.getString("email"),
                 doc.getString("bio"),
                 doc.getString("avatarUrl")
         );
+        Long recipes = doc.getLong("recipes");
+        Long followers = doc.getLong("followers");
+        user.setRecipes(recipes == null ? 0 : recipes);
+        user.setFollowers(followers == null ? 0 : followers);
+        user.setFollowing(followingIds.contains(doc.getId()));
+        return user;
+    }
+
+    private void loadFollowingIds() {
+        String uid = SessionManager.currentUid();
+        if (uid == null) return;
+        FollowRepository.followingIds(uid,
+                ids -> {
+                    followingIds.clear();
+                    if (ids != null) followingIds.addAll(ids);
+                    applyFollowingState();
+                    render(currentQuery());
+                },
+                e -> { });
+    }
+
+    private void applyFollowingState() {
+        for (UserListItem user : chefs) {
+            user.setFollowing(user.getUid() != null && followingIds.contains(user.getUid()));
+        }
     }
 
     private void scheduleSearch(String query) {
@@ -206,6 +238,13 @@ public class ExploreActivity extends AppCompatActivity {
         for (UserListItem user : chefs) {
             if (q.length() < 2 || userMatches(user, q)) filtered.add(user);
         }
+        Collections.sort(filtered, (a, b) -> {
+            int byFollowers = Long.compare(b.getFollowers(), a.getFollowers());
+            if (byFollowers != 0) return byFollowers;
+            int byRecipes = Long.compare(b.getRecipes(), a.getRecipes());
+            if (byRecipes != 0) return byRecipes;
+            return a.displayName().compareToIgnoreCase(b.displayName());
+        });
         if (userAdapter != null) userAdapter.updateData(filtered);
         paintEmpty(filtered.isEmpty(), "Sin chefs", "Prueba con otro nombre o usuario.");
     }
@@ -218,6 +257,7 @@ public class ExploreActivity extends AppCompatActivity {
 
     private boolean userMatches(UserListItem user, String q) {
         return contains(user.displayName(), q)
+                || contains(user.handle(), q)
                 || contains(user.getEmail(), q)
                 || contains(user.getBio(), q);
     }
@@ -262,6 +302,56 @@ public class ExploreActivity extends AppCompatActivity {
         i.putExtra(ProfileActivity.EXTRA_BIO, user.getBio());
         i.putExtra(ProfileActivity.EXTRA_IS_OWN_PROFILE, false);
         startActivity(i);
+    }
+
+    private void toggleFollow(UserListItem user) {
+        String meUid = SessionManager.currentUid();
+        if (meUid == null || user == null || user.getUid() == null) {
+            Toast.makeText(this, "Inicia sesion para seguir chefs", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        boolean next = !user.isFollowing();
+        user.setFollowing(next);
+        if (next) {
+            followingIds.add(user.getUid());
+            user.setFollowers(user.getFollowers() + 1);
+        } else {
+            followingIds.remove(user.getUid());
+            user.setFollowers(Math.max(0, user.getFollowers() - 1));
+        }
+        render(currentQuery());
+
+        FollowRepository.toggleFollow(meUid, user.getUid(), next, v -> {
+            if (next) {
+                ActivityRepository.notifyFollow(user.getUid(), meUid, currentActorName(), null, null);
+            }
+        }, e -> {
+            user.setFollowing(!next);
+            if (next) {
+                followingIds.remove(user.getUid());
+                user.setFollowers(Math.max(0, user.getFollowers() - 1));
+            } else {
+                followingIds.add(user.getUid());
+                user.setFollowers(user.getFollowers() + 1);
+            }
+            render(currentQuery());
+            Toast.makeText(this, "No se pudo actualizar seguimiento", Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    private String currentActorName() {
+        com.google.firebase.auth.FirebaseUser user =
+                com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+        if (user != null) {
+            if (user.getDisplayName() != null && !user.getDisplayName().trim().isEmpty()) {
+                return user.getDisplayName().trim();
+            }
+            if (user.getEmail() != null && user.getEmail().contains("@")) {
+                return user.getEmail().substring(0, user.getEmail().indexOf("@"));
+            }
+        }
+        String localName = new SessionManager(this).getUserName();
+        return localName == null || localName.trim().isEmpty() ? "Chef" : localName.trim();
     }
 
     @Override
