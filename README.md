@@ -227,16 +227,20 @@ La configuración versionada está en:
 - `firestore.indexes.json`
 - `firebase.json`
 - `docs/firebase-security.md`
+- `docs/demo-checklist.md`
 
 El proyecto no usa Firebase Storage. Las imágenes se comprimen y se guardan en Firestore para mantener el despliegue dentro de opciones gratuitas.
 
+## Demo
+
+La guía de preparación para presentar la app está en `docs/demo-checklist.md`.
+
 ## Roadmap
 
-1. Preparar una demo estable para presentación.
-2. Añadir pantalla de ajustes completa.
-3. Mejorar búsqueda y exploración de recetas.
-4. Añadir categorías, dificultad y tiempo de preparación.
-5. Valorar notificaciones push si el proyecto final lo exige.
+1. Añadir pantalla de ajustes completa.
+2. Mejorar búsqueda y exploración de recetas.
+3. Añadir categorías, dificultad y tiempo de preparación.
+4. Valorar notificaciones push si el proyecto final lo exige.
 
 ## Próximos avances propuestos
 
@@ -246,7 +250,7 @@ El proyecto no usa Firebase Storage. Las imágenes se comprimen y se guardan en 
 - Búsqueda por título, autor y texto de receta con filtros rápidos.
 - Categorías de recetas: dulce, salado, rápido, saludable, vegano, horno.
 - Campos de receta más estructurados: tiempo, dificultad y raciones.
-- Checklist de demo con cuentas, datos mínimos y casos de prueba.
+- Script de datos semilla para preparar la demo sin trabajo manual.
 
 ### Ambiciosos
 
