@@ -228,12 +228,19 @@ La configuración versionada está en:
 - `firebase.json`
 - `docs/firebase-security.md`
 - `docs/demo-checklist.md`
+- `scripts/seed-demo.mjs`
 
 El proyecto no usa Firebase Storage. Las imágenes se comprimen y se guardan en Firestore para mantener el despliegue dentro de opciones gratuitas.
 
 ## Demo
 
 La guía de preparación para presentar la app está en `docs/demo-checklist.md`.
+
+Para cargar datos de demo en Firebase:
+
+```bash
+node scripts/seed-demo.mjs
+```
 
 ## Roadmap
 
@@ -250,7 +257,7 @@ La guía de preparación para presentar la app está en `docs/demo-checklist.md`
 - Búsqueda por título, autor y texto de receta con filtros rápidos.
 - Categorías de recetas: dulce, salado, rápido, saludable, vegano, horno.
 - Campos de receta más estructurados: tiempo, dificultad y raciones.
-- Script de datos semilla para preparar la demo sin trabajo manual.
+- Validación visual de pantallas principales antes de entrega.
 
 ### Ambiciosos
 

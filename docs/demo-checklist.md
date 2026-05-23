@@ -27,6 +27,12 @@ Mostrar Sazón como una red social móvil de cocina con:
 firebase deploy --only firestore
 ```
 
+- Cargar datos de demo:
+
+```bash
+node scripts/seed-demo.mjs
+```
+
 - Tener dos sesiones disponibles para probar chat:
   - `fer1@test.com` / `123456`
   - `fer2@test.com` / `123456`
@@ -42,6 +48,8 @@ Antes de presentar, conviene tener:
 - Una receta guardada por el usuario principal.
 - Un usuario siguiendo a otro.
 - Una conversación real entre `fer1@test.com` y `fer2@test.com`.
+
+El script `scripts/seed-demo.mjs` prepara estos datos mínimos.
 
 ## Recorrido recomendado
 
