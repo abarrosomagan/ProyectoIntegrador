@@ -41,7 +41,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
     private ImageView recipeHero;
     private TextView tvCommentsTitle, tvCommentsEmpty;
     private TextInputEditText etComment;
-    private MaterialButton btnLike, btnSave, btnDelete, btnViewProfile;
+    private MaterialButton btnLike, btnSave, btnDelete, btnEdit, btnViewProfile;
     private MaterialButton btnSendComment;
     private RecyclerView rvComments;
     private RecipeCommentAdapter commentsAdapter;
@@ -77,6 +77,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
         btnLike = findViewById(R.id.btnLikeRecipe);
         btnSave = findViewById(R.id.btnSaveRecipe);
         btnDelete = findViewById(R.id.btnDeleteRecipe);
+        btnEdit = findViewById(R.id.btnEditRecipe);
         btnViewProfile = findViewById(R.id.btnFollowFromRecipe);
         tvCommentsTitle = findViewById(R.id.tvCommentsTitle);
         tvCommentsEmpty = findViewById(R.id.tvCommentsEmpty);
@@ -99,6 +100,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
 
         if (btnLike != null) btnLike.setOnClickListener(v -> darLike());
         if (btnSave != null) btnSave.setOnClickListener(v -> alternarGuardado());
+        if (btnEdit != null) btnEdit.setOnClickListener(v -> editarReceta());
         if (btnDelete != null) btnDelete.setOnClickListener(v -> confirmarEliminar());
         if (btnViewProfile != null) btnViewProfile.setOnClickListener(v -> abrirPerfilAutor());
         if (btnSendComment != null) btnSendComment.setOnClickListener(v -> enviarComentario());
@@ -162,6 +164,8 @@ public class RecipeDetailActivity extends AppCompatActivity {
         // El autor es quien la creó: muestra el botón Eliminar
         String meUid = SessionManager.currentUid();
         boolean soyAutor = meUid != null && meUid.equals(receta.getAuthorId());
+        btnEdit.setVisibility(soyAutor ? android.view.View.VISIBLE
+                : android.view.View.GONE);
         btnDelete.setVisibility(soyAutor ? android.view.View.VISIBLE
                 : android.view.View.GONE);
         btnViewProfile.setVisibility(soyAutor ? android.view.View.GONE
@@ -329,6 +333,13 @@ public class RecipeDetailActivity extends AppCompatActivity {
         startActivity(i);
     }
 
+    private void editarReceta() {
+        if (receta == null || receta.getId() == null) return;
+        Intent i = new Intent(this, CreateRecipeActivity.class);
+        i.putExtra(CreateRecipeActivity.EXTRA_EDIT_RECIPE_ID, receta.getId());
+        startActivity(i);
+    }
+
     private String currentAuthorName() {
         FirebaseUser user = SessionManager.currentUser();
         if (user != null) {
@@ -349,6 +360,12 @@ public class RecipeDetailActivity extends AppCompatActivity {
             commentsRegistration = null;
         }
         super.onDestroy();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (receta != null && recipeId != null) cargarReceta();
     }
 
     private static String formatRelativeTime(long createdAt) {

@@ -49,6 +49,7 @@ El proyecto ya tiene implementado el flujo principal de una red social de receta
 - **Registro** con creación de usuario y perfil base en Firestore.
 - **Feed de recetas** alimentado desde Firestore, con buscador y pull-to-refresh.
 - **Creación de recetas** desde la app, con foto opcional comprimida y guardada en Firestore.
+- **Edición de recetas propias** con actualización de título, descripción y foto.
 - **Detalle de receta** con acciones de like, guardar, comentar, compartir, eliminar y acceso al perfil del autor.
 - **Comentarios en recetas** en tiempo real mediante subcolecciones de Firestore.
 - **Likes y guardados persistentes** en Firestore, con estado por usuario en feed y detalle.
@@ -65,7 +66,6 @@ El proyecto ya tiene implementado el flujo principal de una red social de receta
 
 Los siguientes puntos siguen abiertos para completar la experiencia final:
 
-- Edición completa de recetas ya publicadas.
 - Listas navegables de seguidores y siguiendo.
 - Recorte de imagen de avatar.
 - Indicador de escribiendo y presencia en línea en el chat.
@@ -269,11 +269,10 @@ service cloud.firestore {
 
 ## Roadmap
 
-1. Añadir edición completa de recetas.
-2. Completar perfiles sociales con listas de seguidores y siguiendo.
-3. Pulir chat con presencia, escritura y notificaciones.
-4. Revisar reglas de Firebase para producción.
-5. Preparar una demo estable para presentación.
+1. Completar perfiles sociales con listas de seguidores y siguiendo.
+2. Pulir chat con presencia, escritura y notificaciones.
+3. Revisar reglas de Firebase para producción.
+4. Preparar una demo estable para presentación.
 
 ---
 

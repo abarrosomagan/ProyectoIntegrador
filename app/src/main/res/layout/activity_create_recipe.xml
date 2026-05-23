@@ -67,6 +67,7 @@
             android:padding="20dp">
 
             <TextView
+                android:id="@+id/tvCreateRecipeTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Cuéntanos qué has cocinado"
@@ -75,6 +76,7 @@
                 android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/tvCreateRecipeSubtitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
@@ -133,6 +135,20 @@
                     </LinearLayout>
                 </FrameLayout>
             </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRemoveRecipeImage"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="10dp"
+                android:text="Quitar foto"
+                android:textAllCaps="false"
+                android:textColor="@color/color_like"
+                android:visibility="gone"
+                app:cornerRadius="14dp"
+                app:strokeColor="@color/color_like"
+                app:strokeWidth="1dp" />
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilRecipeTitle"

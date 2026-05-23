@@ -200,6 +200,26 @@ public final class RecipeRepository {
                 .addOnFailureListener(onErr);
     }
 
+    public static void updateRecipe(@NonNull String recipeId,
+                                    @NonNull String titulo,
+                                    @NonNull String descripcion,
+                                    @NonNull String imageUrl,
+                                    @NonNull OnSuccessListener<Void> onOk,
+                                    @NonNull OnFailureListener onErr) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("titulo", titulo);
+        data.put("descripcion", descripcion);
+        data.put("imageUrl", imageUrl);
+        data.put("updatedAt", System.currentTimeMillis());
+
+        SessionManager.db()
+                .collection(COLLECTION_RECIPES)
+                .document(recipeId)
+                .update(data)
+                .addOnSuccessListener(onOk)
+                .addOnFailureListener(onErr);
+    }
+
     /** Devuelve si el usuario ya dio like a una receta concreta. */
     public static void isLiked(@NonNull String recipeId,
                                @NonNull String uid,
