@@ -42,7 +42,7 @@ node scripts/seed-demo.mjs
 Antes de presentar, conviene tener:
 
 - Dos usuarios con nombre visible y bio.
-- Al menos tres recetas reales en Firestore.
+- Al menos 14 recetas reales en Firestore.
 - Una receta con foto.
 - Una receta con comentarios.
 - Una receta guardada por el usuario principal.

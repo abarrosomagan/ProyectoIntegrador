@@ -78,6 +78,116 @@ const recipeTemplates = [
     likes: 14,
     createdAt: now - days(3),
   },
+  {
+    id: "demo-arroz-meloso-pollo",
+    ownerEmail: "fer1@test.com",
+    title: "Arroz meloso con pollo",
+    description:
+      "Sofrito con pimiento, ajo y tomate, caldo caliente y pollo dorado. Remover lo justo para dejarlo meloso sin pasarlo.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=900&q=80",
+    likes: 9,
+    createdAt: now - hours(9),
+  },
+  {
+    id: "demo-ensalada-garbanzos",
+    ownerEmail: "test1@sazon.com",
+    title: "Ensalada templada de garbanzos",
+    description:
+      "Garbanzos salteados con comino, tomate cherry, pepino, cebolla morada y una vinagreta de limón.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=900&q=80",
+    likes: 7,
+    createdAt: now - hours(13),
+  },
+  {
+    id: "demo-tacos-pollo-lima",
+    ownerEmail: "fer2@test.com",
+    title: "Tacos de pollo con lima",
+    description:
+      "Pollo especiado, cebolla encurtida rápida, cilantro y lima. Perfectos para montar una cena informal.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?auto=format&fit=crop&w=900&q=80",
+    likes: 13,
+    createdAt: now - days(1) + hours(4),
+  },
+  {
+    id: "demo-crema-calabaza",
+    ownerEmail: "fer1@test.com",
+    title: "Crema de calabaza asada",
+    description:
+      "Calabaza al horno, puerro pochado y un toque de jengibre. Servir con semillas tostadas por encima.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1476718406336-bb5a9690ee2a?auto=format&fit=crop&w=900&q=80",
+    likes: 5,
+    createdAt: now - days(2) + hours(5),
+  },
+  {
+    id: "demo-pancakes-avena",
+    ownerEmail: "test1@sazon.com",
+    title: "Pancakes de avena y plátano",
+    description:
+      "Avena triturada, plátano maduro, huevo y canela. Dorar a fuego medio y acompañar con fruta.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1528207776546-365bb710ee93?auto=format&fit=crop&w=900&q=80",
+    likes: 16,
+    createdAt: now - days(4),
+  },
+  {
+    id: "demo-hummus-pimenton",
+    ownerEmail: "fer2@test.com",
+    title: "Hummus con pimentón",
+    description:
+      "Garbanzos, tahini, limón, ajo suave y aceite de oliva. Terminar con pimentón y pan crujiente.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1577805947697-89e18249d767?auto=format&fit=crop&w=900&q=80",
+    likes: 10,
+    createdAt: now - days(5),
+  },
+  {
+    id: "demo-salmon-horno",
+    ownerEmail: "fer1@test.com",
+    title: "Salmón al horno con verduras",
+    description:
+      "Salmón con limón, eneldo y verduras en bandeja. Una receta limpia, rápida y muy agradecida.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=900&q=80",
+    likes: 12,
+    createdAt: now - days(6),
+  },
+  {
+    id: "demo-croquetas-jamon",
+    ownerEmail: "fer2@test.com",
+    title: "Croquetas caseras de jamón",
+    description:
+      "Bechamel lenta, jamón picado y reposo en frío. Rebozado fino para que queden cremosas por dentro.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1562967914-608f82629710?auto=format&fit=crop&w=900&q=80",
+    likes: 18,
+    createdAt: now - days(7),
+  },
+  {
+    id: "demo-tarta-queso",
+    ownerEmail: "test1@sazon.com",
+    title: "Tarta de queso cremosa",
+    description:
+      "Queso crema, huevos y nata. Horno fuerte al principio y centro tembloroso para una textura perfecta.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1533134242443-d4fd215305ad?auto=format&fit=crop&w=900&q=80",
+    likes: 21,
+    createdAt: now - days(8),
+  },
+  {
+    id: "demo-bruschetta-tomate",
+    ownerEmail: "fer1@test.com",
+    title: "Bruschetta de tomate y albahaca",
+    description:
+      "Pan tostado, tomate maduro, ajo, albahaca fresca y aceite de oliva. Simple y muy resultona.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1572695157366-5e585ab2b69f?auto=format&fit=crop&w=900&q=80",
+    likes: 6,
+    createdAt: now - days(9),
+  },
 ];
 
 const comments = [
@@ -102,6 +212,27 @@ const comments = [
     text: "Me guardo esta para una cena rápida entre semana.",
     createdAt: now - hours(20),
   },
+  {
+    id: "demo-comment-fer2-arroz",
+    recipeId: "demo-arroz-meloso-pollo",
+    authorEmail: "fer2@test.com",
+    text: "Ese punto meloso es justo lo que buscaba.",
+    createdAt: now - hours(7),
+  },
+  {
+    id: "demo-comment-fer1-tacos",
+    recipeId: "demo-tacos-pollo-lima",
+    authorEmail: "fer1@test.com",
+    text: "La cebolla encurtida le da la vida.",
+    createdAt: now - hours(16),
+  },
+  {
+    id: "demo-comment-test1-croquetas",
+    recipeId: "demo-croquetas-jamon",
+    authorEmail: "test1@sazon.com",
+    text: "Croquetas con reposo largo: siempre sí.",
+    createdAt: now - days(2),
+  },
 ];
 
 const likes = [
@@ -111,6 +242,20 @@ const likes = [
   ["demo-pasta-setas", "test1@sazon.com"],
   ["demo-bizcocho-limon", "fer1@test.com"],
   ["demo-bizcocho-limon", "fer2@test.com"],
+  ["demo-arroz-meloso-pollo", "fer2@test.com"],
+  ["demo-arroz-meloso-pollo", "test1@sazon.com"],
+  ["demo-ensalada-garbanzos", "fer1@test.com"],
+  ["demo-tacos-pollo-lima", "fer1@test.com"],
+  ["demo-tacos-pollo-lima", "test1@sazon.com"],
+  ["demo-crema-calabaza", "fer2@test.com"],
+  ["demo-pancakes-avena", "fer1@test.com"],
+  ["demo-hummus-pimenton", "test1@sazon.com"],
+  ["demo-salmon-horno", "fer2@test.com"],
+  ["demo-croquetas-jamon", "fer1@test.com"],
+  ["demo-croquetas-jamon", "test1@sazon.com"],
+  ["demo-tarta-queso", "fer1@test.com"],
+  ["demo-tarta-queso", "fer2@test.com"],
+  ["demo-bruschetta-tomate", "test1@sazon.com"],
 ];
 
 const saved = [
@@ -118,6 +263,11 @@ const saved = [
   ["fer1@test.com", "demo-bizcocho-limon"],
   ["fer2@test.com", "demo-tortilla-jugosa"],
   ["test1@sazon.com", "demo-tortilla-jugosa"],
+  ["fer1@test.com", "demo-tarta-queso"],
+  ["fer2@test.com", "demo-arroz-meloso-pollo"],
+  ["fer2@test.com", "demo-croquetas-jamon"],
+  ["test1@sazon.com", "demo-tacos-pollo-lima"],
+  ["test1@sazon.com", "demo-salmon-horno"],
 ];
 
 const follows = [
