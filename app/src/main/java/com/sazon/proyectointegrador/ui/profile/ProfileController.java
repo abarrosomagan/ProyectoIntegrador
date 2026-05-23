@@ -677,7 +677,8 @@ public class ProfileController {
             int id = item.getItemId();
 
             if (id == 1) {
-                Toast.makeText(a, "Ajustes (pendiente)", Toast.LENGTH_SHORT).show();
+                a.startActivity(new Intent(a,
+                        com.sazon.proyectointegrador.SettingsActivity.class));
                 return true;
             } else if (id == 2) {
                 Toast.makeText(a, "Recetas Social v1 (pendiente)", Toast.LENGTH_SHORT).show();

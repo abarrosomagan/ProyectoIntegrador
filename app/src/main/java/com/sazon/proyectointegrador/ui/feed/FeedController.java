@@ -271,7 +271,8 @@ public class FeedController {
                 int id = menuItem.getItemId();
 
                 if (id == R.id.action_settings) {
-                    Toast.makeText(a, "Ajustes (pendiente)", Toast.LENGTH_SHORT).show();
+                    a.startActivity(new Intent(a,
+                            com.sazon.proyectointegrador.SettingsActivity.class));
                     return true;
                 }
 

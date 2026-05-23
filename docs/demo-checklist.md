@@ -81,6 +81,7 @@ El script `scripts/seed-demo.mjs` prepara estos datos mínimos.
 - Guardado aparece en perfil.
 - Seguir actualiza contador.
 - Lista de seguidores abre.
+- Ajustes abre la cuenta y permite cerrar sesion.
 - Chat envía y recibe.
 - Indicador de escribiendo aparece entre dos sesiones.
 
