@@ -23,6 +23,7 @@ import com.sazon.proyectointegrador.model.Publicacion;
 import com.sazon.proyectointegrador.model.RecipeComment;
 import com.sazon.proyectointegrador.util.RecipeImageHelper;
 import com.sazon.proyectointegrador.util.RecipeRepository;
+import com.sazon.proyectointegrador.util.RecipeStateBus;
 import com.sazon.proyectointegrador.util.SessionManager;
 
 import java.util.ArrayList;
@@ -46,6 +47,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
     private RecyclerView rvComments;
     private RecipeCommentAdapter commentsAdapter;
     private ListenerRegistration commentsRegistration;
+    private final RecipeStateBus.Listener recipeStateListener = this::onRecipeStateChanged;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -61,6 +63,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
         }
 
         bind();
+        RecipeStateBus.register(recipeStateListener);
         cargarReceta();
         cargarEstadoGuardado();
         cargarEstadoLike();
@@ -239,11 +242,13 @@ public class RecipeDetailActivity extends AppCompatActivity {
         receta.setLiked(nuevoLiked);
         receta.setLikes(nuevosLikes);
         pintarBotonLike();
+        RecipeStateBus.publish(receta, nuevoLiked, nuevosLikes, null);
         RecipeRepository.toggleLike(recipeId, uid, nuevoLiked, null, e -> {
             liked = !nuevoLiked;
             receta.setLiked(liked);
             receta.setLikes(likesAnteriores);
             pintarBotonLike();
+            RecipeStateBus.publish(receta, liked, likesAnteriores, null);
         });
     }
 
@@ -252,10 +257,14 @@ public class RecipeDetailActivity extends AppCompatActivity {
         if (uid == null) return;
         boolean nuevo = !guardada;
         guardada = nuevo;
+        if (receta != null) receta.setGuardada(nuevo);
         pintarBotonGuardar();
+        if (receta != null) RecipeStateBus.publish(receta, null, null, nuevo);
         RecipeRepository.toggleSaved(recipeId, uid, nuevo, null, e -> {
             guardada = !nuevo;
+            if (receta != null) receta.setGuardada(guardada);
             pintarBotonGuardar();
+            if (receta != null) RecipeStateBus.publish(receta, null, null, guardada);
             Toast.makeText(this, "No se pudo actualizar el guardado",
                     Toast.LENGTH_SHORT).show();
         });
@@ -355,11 +364,21 @@ public class RecipeDetailActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        RecipeStateBus.unregister(recipeStateListener);
         if (commentsRegistration != null) {
             commentsRegistration.remove();
             commentsRegistration = null;
         }
         super.onDestroy();
+    }
+
+    private void onRecipeStateChanged(RecipeStateBus.RecipeState state) {
+        if (recipeId == null || receta == null || !recipeId.equals(state.recipeId)) return;
+        RecipeStateBus.apply(receta, state);
+        if (state.liked != null) liked = state.liked;
+        if (state.saved != null) guardada = state.saved;
+        pintarBotonLike();
+        pintarBotonGuardar();
     }
 
     @Override

@@ -23,6 +23,7 @@ import com.sazon.proyectointegrador.R;
 import com.sazon.proyectointegrador.adapters.PublicacionAdapter;
 import com.sazon.proyectointegrador.model.Publicacion;
 import com.sazon.proyectointegrador.util.RecipeRepository;
+import com.sazon.proyectointegrador.util.RecipeStateBus;
 import com.sazon.proyectointegrador.util.SessionManager;
 import com.sazon.proyectointegrador.util.SimpleTextWatcher;
 
@@ -52,6 +53,7 @@ public class FeedController {
 
     // Data source (hoy mock, mañana Firestore)
     private FeedRepository repository;
+    private final RecipeStateBus.Listener recipeStateListener = this::onRecipeStateChanged;
 
     public FeedController(AppCompatActivity activity) {
         this.a = activity;
@@ -70,6 +72,7 @@ public class FeedController {
         setupRefresh();
         setupMenu();
 
+        RecipeStateBus.register(recipeStateListener);
         loadFeed(false);
     }
 
@@ -79,8 +82,24 @@ public class FeedController {
     }
 
     public void onDestroy() {
+        RecipeStateBus.unregister(recipeStateListener);
         // Aquí en el futuro: repository.detach() para ListenerRegistration de Firestore
         // repository.detach();
+    }
+
+    private void onRecipeStateChanged(RecipeStateBus.RecipeState state) {
+        boolean changed = false;
+        for (Publicacion p : currentData) {
+            if (state.recipeId.equals(p.getId())) {
+                RecipeStateBus.apply(p, state);
+                changed = true;
+            }
+        }
+        if (!changed) return;
+        String q = (etBuscar != null && etBuscar.getText() != null)
+                ? etBuscar.getText().toString().trim()
+                : "";
+        applySearch(q);
     }
 
     private void bind() {

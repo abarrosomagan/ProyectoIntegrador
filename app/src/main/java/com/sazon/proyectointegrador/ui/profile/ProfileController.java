@@ -30,6 +30,7 @@ import com.sazon.proyectointegrador.adapters.PublicacionGridAdapter;
 import com.sazon.proyectointegrador.model.Publicacion;
 import com.sazon.proyectointegrador.util.AvatarHelper;
 import com.sazon.proyectointegrador.util.RecipeRepository;
+import com.sazon.proyectointegrador.util.RecipeStateBus;
 import com.sazon.proyectointegrador.util.SessionManager;
 
 import java.util.ArrayList;
@@ -62,6 +63,7 @@ public class ProfileController {
     private final ArrayList<Publicacion> my = new ArrayList<>();
     private final ArrayList<Publicacion> saved = new ArrayList<>();
     private final Set<String> savedIds = new HashSet<>();
+    private final Set<String> likedIds = new HashSet<>();
 
     // Caché del perfil actual (lo que se ve en la UI)
     private String nombreActual = "";
@@ -69,6 +71,7 @@ public class ProfileController {
     private boolean showingMyTab = true;
 
     private AvatarHelper avatarHelper;
+    private final RecipeStateBus.Listener recipeStateListener = this::onRecipeStateChanged;
 
     public ProfileController(AppCompatActivity activity) {
         this.a = activity;
@@ -80,6 +83,7 @@ public class ProfileController {
         setupAvatarPicker();
         setupListeners();
         setupCollapsibleHeader();
+        RecipeStateBus.register(recipeStateListener);
 
         ImageButton btnBack = a.findViewById(R.id.btnBackProfile);
         if (btnBack != null) btnBack.setVisibility(View.GONE);
@@ -95,6 +99,10 @@ public class ProfileController {
     public void refresh() {
         cargarPerfilDesdeFirestore();
         cargarRecetas();
+    }
+
+    public void onDestroy() {
+        RecipeStateBus.unregister(recipeStateListener);
     }
 
     private void setupAvatarPicker() {
@@ -281,50 +289,129 @@ public class ProfileController {
             return;
         }
 
-        // 1) Set de IDs guardados para marcar el icono "estrella"
+        // 1) Estado por usuario para pintar perfil de forma coherente con feed/detalle
         RecipeRepository.savedIds(uid,
                 ids -> {
                     savedIds.clear();
                     savedIds.addAll(ids);
-                    // 2) Recetas propias
-                    RecipeRepository.byAuthor(uid,
-                            list -> {
-                                my.clear();
-                                if (list != null && !list.isEmpty()) {
-                                    for (Publicacion p : list) {
-                                        p.setGuardada(savedIds.contains(p.getId()));
-                                        my.add(p);
-                                    }
-                                } else if (com.sazon.proyectointegrador.util.DemoData.ENABLED) {
-                                    my.addAll(com.sazon.proyectointegrador.util.DemoData.recetasPropias());
-                                }
-                                if (tvStatRecipes != null)
-                                    tvStatRecipes.setText(String.valueOf(my.size()));
-                                if (tvChefRank != null)
-                                    tvChefRank.setText(chefRankFor(my.size()));
-                                if (showingMyTab) showMy();
-                                if (swipeProfile != null) swipeProfile.setRefreshing(false);
+                    RecipeRepository.likedIds(uid,
+                            idsLiked -> {
+                                likedIds.clear();
+                                likedIds.addAll(idsLiked);
+                                cargarRecetasConEstado(uid);
                             },
                             e -> {
-                                if (swipeProfile != null) swipeProfile.setRefreshing(false);
+                                likedIds.clear();
+                                cargarRecetasConEstado(uid);
                             });
-
-                    // 3) Recetas guardadas
-                    RecipeRepository.savedBy(uid,
-                            list -> {
-                                saved.clear();
-                                if (list != null && !list.isEmpty()) {
-                                    saved.addAll(list);
-                                } else if (com.sazon.proyectointegrador.util.DemoData.ENABLED) {
-                                    saved.addAll(com.sazon.proyectointegrador.util.DemoData.recetasGuardadas());
-                                }
-                                if (!showingMyTab) showSaved();
-                            },
-                            e -> { /* idem */ });
                 },
                 e -> {
                     if (swipeProfile != null) swipeProfile.setRefreshing(false);
                 });
+    }
+
+    private void cargarRecetasConEstado(String uid) {
+        RecipeRepository.byAuthor(uid,
+                list -> {
+                    my.clear();
+                    if (list != null && !list.isEmpty()) {
+                        for (Publicacion p : list) {
+                            aplicarEstadoUsuario(p);
+                            my.add(p);
+                        }
+                    } else if (com.sazon.proyectointegrador.util.DemoData.ENABLED) {
+                        my.addAll(com.sazon.proyectointegrador.util.DemoData.recetasPropias());
+                    }
+                    if (tvStatRecipes != null)
+                        tvStatRecipes.setText(String.valueOf(my.size()));
+                    if (tvChefRank != null)
+                        tvChefRank.setText(chefRankFor(my.size()));
+                    if (showingMyTab) showMy();
+                    if (swipeProfile != null) swipeProfile.setRefreshing(false);
+                },
+                e -> {
+                    if (swipeProfile != null) swipeProfile.setRefreshing(false);
+                });
+
+        RecipeRepository.savedBy(uid,
+                list -> {
+                    saved.clear();
+                    if (list != null && !list.isEmpty()) {
+                        for (Publicacion p : list) {
+                            aplicarEstadoUsuario(p);
+                            p.setGuardada(true);
+                            saved.add(p);
+                        }
+                    } else if (com.sazon.proyectointegrador.util.DemoData.ENABLED) {
+                        saved.addAll(com.sazon.proyectointegrador.util.DemoData.recetasGuardadas());
+                    }
+                    if (!showingMyTab) showSaved();
+                },
+                e -> { /* idem */ });
+    }
+
+    private void aplicarEstadoUsuario(Publicacion p) {
+        if (p == null || p.getId() == null) return;
+        p.setGuardada(savedIds.contains(p.getId()));
+        p.setLiked(likedIds.contains(p.getId()));
+    }
+
+    private void onRecipeStateChanged(RecipeStateBus.RecipeState state) {
+        if (state.liked != null) {
+            if (state.liked) likedIds.add(state.recipeId);
+            else likedIds.remove(state.recipeId);
+        }
+        if (state.saved != null) {
+            if (state.saved) savedIds.add(state.recipeId);
+            else savedIds.remove(state.recipeId);
+        }
+
+        boolean changedMy = applyStateToList(my, state);
+        boolean changedSaved = applyStateToList(saved, state);
+
+        if (state.saved != null && state.recipe != null) {
+            if (state.saved && !containsRecipe(saved, state.recipeId)) {
+                Publicacion copy = state.recipe;
+                RecipeStateBus.apply(copy, state);
+                copy.setGuardada(true);
+                saved.add(0, copy);
+                changedSaved = true;
+            } else if (!state.saved) {
+                changedSaved = removeRecipe(saved, state.recipeId) || changedSaved;
+            }
+        }
+
+        if (showingMyTab && changedMy) showMy();
+        if (!showingMyTab && changedSaved) showSaved();
+    }
+
+    private boolean applyStateToList(List<Publicacion> list, RecipeStateBus.RecipeState state) {
+        boolean changed = false;
+        for (Publicacion p : list) {
+            if (state.recipeId.equals(p.getId())) {
+                RecipeStateBus.apply(p, state);
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
+    private boolean containsRecipe(List<Publicacion> list, String recipeId) {
+        for (Publicacion p : list) {
+            if (recipeId.equals(p.getId())) return true;
+        }
+        return false;
+    }
+
+    private boolean removeRecipe(List<Publicacion> list, String recipeId) {
+        for (int i = list.size() - 1; i >= 0; i--) {
+            Publicacion p = list.get(i);
+            if (recipeId.equals(p.getId())) {
+                list.remove(i);
+                return true;
+            }
+        }
+        return false;
     }
 
     private void renderAvatar(String avatarUrl, String name) {

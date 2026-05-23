@@ -14,6 +14,7 @@ import com.sazon.proyectointegrador.R;
 import com.sazon.proyectointegrador.model.Publicacion;
 import com.sazon.proyectointegrador.util.RecipeImageHelper;
 import com.sazon.proyectointegrador.util.RecipeRepository;
+import com.sazon.proyectointegrador.util.RecipeStateBus;
 import com.sazon.proyectointegrador.util.SessionManager;
 
 import java.util.ArrayList;
@@ -99,10 +100,12 @@ public class PublicacionAdapter extends RecyclerView.Adapter<PublicacionAdapter.
             boolean nuevo = !p.isGuardada();
             p.setGuardada(nuevo);
             notifyItemChanged(h.getAdapterPosition());
+            RecipeStateBus.publish(p, null, null, nuevo);
             RecipeRepository.toggleSaved(recipeId, uid, nuevo, null, e -> {
                 // Si falla, revertimos visualmente
                 p.setGuardada(!nuevo);
                 notifyItemChanged(h.getAdapterPosition());
+                RecipeStateBus.publish(p, null, null, !nuevo);
             });
         });
 
@@ -116,10 +119,12 @@ public class PublicacionAdapter extends RecyclerView.Adapter<PublicacionAdapter.
             int nuevoLikes = Math.max(0, anteriorLikes + (nuevoLiked ? 1 : -1));
             p.setLiked(nuevoLiked);
             p.setLikes(nuevoLikes);
+            RecipeStateBus.publish(p, nuevoLiked, nuevoLikes, null);
             h.tvLikes.setText((nuevoLiked ? "♥ " : "♡ ") + nuevoLikes);
             RecipeRepository.toggleLike(recipeId, uid, nuevoLiked, null, e -> {
                 p.setLiked(!nuevoLiked);
                 p.setLikes(anteriorLikes);
+                RecipeStateBus.publish(p, !nuevoLiked, anteriorLikes, null);
                 h.tvLikes.setText((!nuevoLiked ? "♥ " : "♡ ") + anteriorLikes);
             });
         });

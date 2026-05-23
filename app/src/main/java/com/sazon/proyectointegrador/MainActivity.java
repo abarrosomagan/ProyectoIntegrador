@@ -72,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         if (feedController != null) feedController.onDestroy();
         if (chatsController != null) chatsController.onDestroy();
+        if (profileController != null) profileController.onDestroy();
     }
 
     private void setupBottomNav() {
