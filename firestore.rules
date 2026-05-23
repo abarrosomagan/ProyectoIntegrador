@@ -1,0 +1,105 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function chat(chatId) {
+      return get(/databases/$(database)/documents/chats/$(chatId));
+    }
+
+    function isChatParticipant(chatId) {
+      return signedIn()
+        && request.auth.uid in chat(chatId).data.participants;
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow create: if isSelf(uid);
+      allow update: if isSelf(uid)
+        || request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['followers', 'following', 'recipes']);
+      allow delete: if isSelf(uid);
+
+      match /followers/{followerUid} {
+        allow read: if signedIn();
+        allow create, delete: if signedIn() && request.auth.uid == followerUid;
+      }
+
+      match /following/{followingUid} {
+        allow read: if signedIn();
+        allow create, delete: if isSelf(uid) && followingUid != uid;
+      }
+
+      match /saved/{recipeId} {
+        allow read, create, update, delete: if isSelf(uid);
+      }
+    }
+
+    match /recipes/{recipeId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.keys().hasAll([
+          'authorId', 'autor', 'titulo', 'descripcion', 'imageUrl', 'likes', 'createdAt'
+        ]);
+      allow update, delete: if signedIn()
+        && resource.data.authorId == request.auth.uid;
+
+      match /likes/{uid} {
+        allow read: if signedIn();
+        allow create, delete: if isSelf(uid);
+      }
+
+      match /comments/{commentId} {
+        allow read: if signedIn();
+        allow create: if signedIn()
+          && request.resource.data.authorId == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 500;
+        allow update: if false;
+        allow delete: if signedIn()
+          && resource.data.authorId == request.auth.uid;
+      }
+    }
+
+    match /chats/{chatId} {
+      allow read: if isChatParticipant(chatId);
+      allow create: if signedIn()
+        && request.auth.uid in request.resource.data.participants
+        && request.resource.data.participants.size() == 2;
+      allow update: if isChatParticipant(chatId)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly([
+            'lastMessage',
+            'lastSenderId',
+            'lastMessageAt',
+            'lastReadAt',
+            'presence',
+            'participantsNames'
+          ]);
+      allow delete: if false;
+
+      match /messages/{msgId} {
+        allow read: if isChatParticipant(chatId);
+        allow create: if isChatParticipant(chatId)
+          && request.resource.data.senderId == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 1000;
+        allow update: if isChatParticipant(chatId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy'])
+          && request.auth.uid in request.resource.data.readBy;
+        allow delete: if isChatParticipant(chatId)
+          && resource.data.senderId == request.auth.uid;
+      }
+    }
+  }
+}

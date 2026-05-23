@@ -219,62 +219,42 @@ git clone https://github.com/abarrosomagan/ProyectoIntegrador.git
 
 ---
 
-## Reglas mínimas de Firestore para desarrollo
+## Seguridad Firebase
 
-```js
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /users/{uid} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == uid;
+La configuración versionada está en:
 
-      match /{sub=**} {
-        allow read, write: if request.auth != null;
-      }
-    }
+- `firestore.rules`
+- `firestore.indexes.json`
+- `firebase.json`
+- `docs/firebase-security.md`
 
-    match /recipes/{recipeId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null
-        && request.auth.uid == request.resource.data.authorId;
-      allow update, delete: if request.auth != null
-        && request.auth.uid == resource.data.authorId;
-
-      match /likes/{uid} {
-        allow read: if request.auth != null;
-        allow write: if request.auth != null && request.auth.uid == uid;
-      }
-
-      match /comments/{commentId} {
-        allow read: if request.auth != null;
-        allow create: if request.auth != null
-          && request.auth.uid == request.resource.data.authorId;
-      }
-    }
-
-    match /chats/{chatId} {
-      allow read, update: if request.auth != null
-        && request.auth.uid in resource.data.participants;
-      allow create: if request.auth != null
-        && request.auth.uid in request.resource.data.participants;
-
-      match /messages/{msgId} {
-        allow read: if request.auth != null
-          && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
-        allow create: if request.auth != null
-          && request.auth.uid == request.resource.data.senderId;
-      }
-    }
-  }
-}
-```
+El proyecto no usa Firebase Storage. Las imágenes se comprimen y se guardan en Firestore para mantener el despliegue dentro de opciones gratuitas.
 
 ## Roadmap
 
-1. Revisar reglas de Firebase para producción.
-2. Preparar una demo estable para presentación.
-3. Valorar notificaciones push si el proyecto final lo exige.
+1. Preparar una demo estable para presentación.
+2. Añadir pantalla de ajustes completa.
+3. Mejorar búsqueda y exploración de recetas.
+4. Añadir categorías, dificultad y tiempo de preparación.
+5. Valorar notificaciones push si el proyecto final lo exige.
+
+## Próximos avances propuestos
+
+### Normales
+
+- Pantalla de ajustes: perfil, sesión, privacidad básica y borrar cuenta.
+- Búsqueda por título, autor y texto de receta con filtros rápidos.
+- Categorías de recetas: dulce, salado, rápido, saludable, vegano, horno.
+- Campos de receta más estructurados: tiempo, dificultad y raciones.
+- Checklist de demo con cuentas, datos mínimos y casos de prueba.
+
+### Ambiciosos
+
+- Ingredientes y pasos estructurados por receta.
+- Modo cocinar paso a paso.
+- Colecciones personales de recetas.
+- Ranking de chefs y recetas populares.
+- Planificador semanal y lista de la compra.
 
 ---
 
