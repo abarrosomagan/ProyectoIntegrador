@@ -34,6 +34,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -123,7 +124,19 @@ public class ChatsController {
                     for (DocumentSnapshot doc : snap.getDocuments()) {
                         String chatId = doc.getId();
                         String lastMessage = doc.getString("lastMessage");
+                        String lastSenderId = doc.getString("lastSenderId");
                         Timestamp lastAt = doc.getTimestamp("lastMessageAt");
+                        Timestamp lastReadAt = doc.getTimestamp("lastReadAt." + uid);
+                        String otherUid = null;
+                        List<String> participants = (List<String>) doc.get("participants");
+                        if (participants != null) {
+                            for (String participant : participants) {
+                                if (participant != null && !participant.equals(uid)) {
+                                    otherUid = participant;
+                                    break;
+                                }
+                            }
+                        }
 
                         // Nombre del otro participante (el que NO soy yo)
                         String otherName = "Chat";
@@ -139,12 +152,19 @@ public class ChatsController {
                             }
                         }
 
+                        Boolean otherTyping = otherUid != null
+                                ? doc.getBoolean("presence." + otherUid + ".typing")
+                                : false;
+                        String preview = Boolean.TRUE.equals(otherTyping)
+                                ? "escribiendo..."
+                                : (lastMessage != null ? lastMessage : "");
+
                         ChatThread thread = new ChatThread(
                                 chatId,
                                 otherName,
-                                lastMessage != null ? lastMessage : "",
+                                preview,
                                 formatChatTime(lastAt),
-                                0
+                                hasUnread(uid, lastSenderId, lastAt, lastReadAt) ? 1 : 0
                         );
                         filas.add(new Object[]{ thread, lastAt });
                     }
@@ -205,6 +225,15 @@ public class ChatsController {
         }
 
         return new SimpleDateFormat("dd/MM", new Locale("es", "ES")).format(date);
+    }
+
+    private static boolean hasUnread(String uid,
+                                     String lastSenderId,
+                                     Timestamp lastAt,
+                                     Timestamp lastReadAt) {
+        if (uid == null || lastSenderId == null || lastAt == null) return false;
+        if (uid.equals(lastSenderId)) return false;
+        return lastReadAt == null || lastAt.compareTo(lastReadAt) > 0;
     }
 
     private void actualizarEstadoVacio() {

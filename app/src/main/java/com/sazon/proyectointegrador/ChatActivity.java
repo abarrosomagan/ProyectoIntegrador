@@ -1,6 +1,8 @@
 package com.sazon.proyectointegrador;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.ImageButton;
@@ -29,6 +31,7 @@ import com.sazon.proyectointegrador.model.ChatItem;
 import com.sazon.proyectointegrador.model.ChatMessage;
 import com.sazon.proyectointegrador.util.DemoData;
 import com.sazon.proyectointegrador.util.SessionManager;
+import com.sazon.proyectointegrador.util.SimpleTextWatcher;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -58,6 +61,10 @@ public class ChatActivity extends AppCompatActivity {
     private String otherUid;
 
     private ListenerRegistration messagesListener;
+    private ListenerRegistration chatStateListener;
+    private final Handler typingHandler = new Handler(Looper.getMainLooper());
+    private boolean typingSent = false;
+    private final Runnable stopTypingRunnable = () -> updateTyping(false);
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -107,6 +114,7 @@ public class ChatActivity extends AppCompatActivity {
         deduceOtherUid();
 
         btnSend.setOnClickListener(v -> sendMessage());
+        setupTypingWatcher();
     }
 
     private void deduceOtherUid() {
@@ -128,6 +136,8 @@ public class ChatActivity extends AppCompatActivity {
         if (DemoData.isDemoChatId(chatId)) {
             cargarMensajesDemo();
         } else {
+            updatePresence(true);
+            listenChatState();
             listenMessages();
         }
     }
@@ -138,6 +148,15 @@ public class ChatActivity extends AppCompatActivity {
         if (messagesListener != null) {
             messagesListener.remove();
             messagesListener = null;
+        }
+        if (chatStateListener != null) {
+            chatStateListener.remove();
+            chatStateListener = null;
+        }
+        typingHandler.removeCallbacks(stopTypingRunnable);
+        if (!DemoData.isDemoChatId(chatId)) {
+            updateTyping(false);
+            updatePresence(false);
         }
     }
 
@@ -217,6 +236,13 @@ public class ChatActivity extends AppCompatActivity {
             batch.update(d.getReference(), "readBy", FieldValue.arrayUnion(meUid));
         }
         batch.commit(); // los errores aquí no rompen nada visible
+
+        Map<String, Object> readUpdate = new HashMap<>();
+        readUpdate.put("lastReadAt." + meUid, FieldValue.serverTimestamp());
+        SessionManager.db()
+                .collection(SessionManager.COLLECTION_CHATS)
+                .document(chatId)
+                .set(readUpdate, SetOptions.merge());
     }
 
     // ===== Envío =====
@@ -263,6 +289,8 @@ public class ChatActivity extends AppCompatActivity {
                 .collection(SessionManager.COLLECTION_CHATS)
                 .document(chatId)
                 .set(chatUpdate, SetOptions.merge());
+
+        updateTyping(false);
     }
 
     // ===== Eliminar =====
@@ -292,6 +320,94 @@ public class ChatActivity extends AppCompatActivity {
             if (it instanceof ChatMessage) { conMensajes = true; break; }
         }
         tvChatEmpty.setVisibility(conMensajes ? View.GONE : View.VISIBLE);
+    }
+
+    // ===== Presencia y escribiendo =====
+
+    private void setupTypingWatcher() {
+        if (etMessage == null) return;
+        etMessage.addTextChangedListener(new SimpleTextWatcher() {
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (DemoData.isDemoChatId(chatId)) return;
+                boolean hasText = s != null && s.toString().trim().length() > 0;
+                if (hasText) {
+                    updateTyping(true);
+                    typingHandler.removeCallbacks(stopTypingRunnable);
+                    typingHandler.postDelayed(stopTypingRunnable, 1800);
+                } else {
+                    updateTyping(false);
+                }
+            }
+        });
+    }
+
+    private void listenChatState() {
+        if (otherUid == null) return;
+        chatStateListener = SessionManager.db()
+                .collection(SessionManager.COLLECTION_CHATS)
+                .document(chatId)
+                .addSnapshotListener((doc, e) -> {
+                    if (e != null || doc == null || !doc.exists()) return;
+                    Boolean typing = doc.getBoolean("presence." + otherUid + ".typing");
+                    Boolean active = doc.getBoolean("presence." + otherUid + ".active");
+                    Timestamp lastSeen = doc.getTimestamp("presence." + otherUid + ".lastSeen");
+
+                    if (Boolean.TRUE.equals(typing)) {
+                        tvChatSubtitle.setText("escribiendo...");
+                    } else if (Boolean.TRUE.equals(active)) {
+                        tvChatSubtitle.setText("en línea");
+                    } else {
+                        tvChatSubtitle.setText(formatLastSeen(lastSeen));
+                    }
+                });
+    }
+
+    private void updatePresence(boolean active) {
+        String uid = SessionManager.currentUid();
+        if (uid == null || DemoData.isDemoChatId(chatId)) return;
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("presence." + uid + ".active", active);
+        data.put("presence." + uid + ".typing", false);
+        data.put("presence." + uid + ".lastSeen", FieldValue.serverTimestamp());
+
+        SessionManager.db()
+                .collection(SessionManager.COLLECTION_CHATS)
+                .document(chatId)
+                .set(data, SetOptions.merge());
+        typingSent = false;
+    }
+
+    private void updateTyping(boolean typing) {
+        String uid = SessionManager.currentUid();
+        if (uid == null || DemoData.isDemoChatId(chatId)) return;
+        if (typingSent == typing) return;
+        typingSent = typing;
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("presence." + uid + ".typing", typing);
+        data.put("presence." + uid + ".active", true);
+        data.put("presence." + uid + ".lastSeen", FieldValue.serverTimestamp());
+
+        SessionManager.db()
+                .collection(SessionManager.COLLECTION_CHATS)
+                .document(chatId)
+                .set(data, SetOptions.merge());
+    }
+
+    private static String formatLastSeen(Timestamp ts) {
+        if (ts == null) return "Activo recientemente";
+        long diff = System.currentTimeMillis() - ts.toDate().getTime();
+        if (diff < 0) diff = 0;
+        long minutes = diff / (60 * 1000);
+        long hours = diff / (60 * 60 * 1000);
+        long days = diff / (24 * 60 * 60 * 1000);
+        if (minutes < 1) return "Activo ahora";
+        if (minutes < 60) return "Activo hace " + minutes + " min";
+        if (hours < 24) return "Activo hace " + hours + " h";
+        if (days == 1) return "Activo ayer";
+        return "Activo hace " + days + " días";
     }
 
     // ===== Helpers fecha =====

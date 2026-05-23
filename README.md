@@ -57,7 +57,7 @@ El proyecto ya tiene implementado el flujo principal de una red social de receta
 - **Perfil ajeno** con carga de datos reales y botón de seguir o dejar de seguir.
 - **Sistema de seguimiento** con contadores y listas navegables de seguidores y siguiendo.
 - **Chats en tiempo real** con Firestore, lista de conversaciones y búsqueda de usuarios por correo.
-- **Mensajes** con burbujas diferenciadas, separadores de fecha, hora y lectura básica.
+- **Mensajes** con burbujas diferenciadas, separadores de fecha, hora, lectura básica, presencia, indicador de escribiendo y aviso interno de no leído.
 - **Modo demo** para mostrar contenido cuando todavía no hay datos reales.
 
 ---
@@ -67,7 +67,6 @@ El proyecto ya tiene implementado el flujo principal de una red social de receta
 Los siguientes puntos siguen abiertos para completar la experiencia final:
 
 - Recorte de imagen de avatar.
-- Indicador de escribiendo y presencia en línea en el chat.
 - Notificaciones push.
 - Pantalla de ajustes completa.
 - Login con Google.
@@ -181,6 +180,8 @@ chats/{chatId}
   participants
   participantsNames
   lastMessage, lastSenderId, lastMessageAt
+  lastReadAt.{uid}
+  presence.{uid}.active, presence.{uid}.typing, presence.{uid}.lastSeen
 
 chats/{chatId}/messages/{msgId}
   text, senderId, createdAt, readAt
@@ -271,9 +272,9 @@ service cloud.firestore {
 
 ## Roadmap
 
-1. Pulir chat con presencia, escritura y notificaciones.
-2. Revisar reglas de Firebase para producción.
-3. Preparar una demo estable para presentación.
+1. Revisar reglas de Firebase para producción.
+2. Preparar una demo estable para presentación.
+3. Valorar notificaciones push si el proyecto final lo exige.
 
 ---
 
