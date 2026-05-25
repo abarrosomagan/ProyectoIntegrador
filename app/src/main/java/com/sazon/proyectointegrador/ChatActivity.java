@@ -120,6 +120,9 @@ public class ChatActivity extends AppCompatActivity {
 
         btnSend.setOnClickListener(v -> sendMessage());
         setupTypingWatcher();
+
+        // Restaurar borrador (si el usuario empezó a escribir y salió sin enviar)
+        restaurarBorrador();
     }
 
     private void deduceOtherUid() {
@@ -163,6 +166,43 @@ public class ChatActivity extends AppCompatActivity {
             updateTyping(false);
             updatePresence(false);
         }
+
+        // Guardar borrador al salir del chat
+        guardarBorrador();
+    }
+
+    // ===== Borradores =====
+
+    private static final String PREFS_DRAFTS = "chat_drafts";
+
+    private void restaurarBorrador() {
+        if (etMessage == null || chatId == null) return;
+        String draft = getSharedPreferences(PREFS_DRAFTS, MODE_PRIVATE)
+                .getString(chatId, null);
+        if (draft != null && !draft.isEmpty()) {
+            etMessage.setText(draft);
+            etMessage.setSelection(draft.length());
+        }
+    }
+
+    private void guardarBorrador() {
+        if (etMessage == null || chatId == null) return;
+        String texto = etMessage.getText() != null
+                ? etMessage.getText().toString()
+                : "";
+        if (texto.trim().isEmpty()) {
+            getSharedPreferences(PREFS_DRAFTS, MODE_PRIVATE)
+                    .edit().remove(chatId).apply();
+        } else {
+            getSharedPreferences(PREFS_DRAFTS, MODE_PRIVATE)
+                    .edit().putString(chatId, texto).apply();
+        }
+    }
+
+    private void limpiarBorrador() {
+        if (chatId == null) return;
+        getSharedPreferences(PREFS_DRAFTS, MODE_PRIVATE)
+                .edit().remove(chatId).apply();
     }
 
     private void cargarMensajesDemo() {
@@ -278,6 +318,7 @@ public class ChatActivity extends AppCompatActivity {
 
         if (DemoData.isDemoChatId(chatId)) {
             etMessage.setText("");
+            limpiarBorrador();
             items.add(new ChatMessage(text, true, System.currentTimeMillis()));
             adapter.notifyDataSetChanged();
             actualizarEstadoVacio();
@@ -292,6 +333,7 @@ public class ChatActivity extends AppCompatActivity {
         }
 
         etMessage.setText("");
+        limpiarBorrador();
 
         Map<String, Object> msg = new HashMap<>();
         msg.put("text", text);
