@@ -50,6 +50,14 @@ public class ChatsController {
     private final ArrayList<ChatThread> chatsData = new ArrayList<>();
 
     private ListenerRegistration chatsListener;
+    private ListenerRegistration chatSettingsListener;
+
+    /** Caches por chatId del estado silenciado / fijado del usuario actual. */
+    private final HashMap<String, Boolean> mutedByChatId = new HashMap<>();
+    private final HashMap<String, Boolean> pinnedByChatId = new HashMap<>();
+
+    /** Guardamos el último snapshot ordenado para repintar tras cambios de chatSettings. */
+    private final ArrayList<Object[]> filasUltimoSnapshot = new ArrayList<>();
 
     public ChatsController(AppCompatActivity activity) {
         this.a = activity;
@@ -59,6 +67,7 @@ public class ChatsController {
         bind();
         setupRecycler();
         setupListeners();
+        suscribirChatSettings();
         suscribirChats();
         actualizarEstadoVacio();
     }
@@ -67,6 +76,10 @@ public class ChatsController {
         if (chatsListener != null) {
             chatsListener.remove();
             chatsListener = null;
+        }
+        if (chatSettingsListener != null) {
+            chatSettingsListener.remove();
+            chatSettingsListener = null;
         }
     }
 
@@ -86,6 +99,8 @@ public class ChatsController {
             i.putExtra(ChatActivity.EXTRA_CHAT_NAME, chat.getName());
             a.startActivity(i);
         });
+
+        chatsAdapter.setOnChatLongClick(this::mostrarDialogoOpcionesChat);
 
         rvChats.setAdapter(chatsAdapter);
     }
@@ -171,6 +186,9 @@ public class ChatsController {
                                     && otherReadAt.compareTo(lastAt) >= 0;
                         }
 
+                        boolean muted = Boolean.TRUE.equals(mutedByChatId.get(chatId));
+                        boolean pinned = Boolean.TRUE.equals(pinnedByChatId.get(chatId));
+
                         ChatThread thread = new ChatThread(
                                 chatId,
                                 otherName,
@@ -180,32 +198,144 @@ public class ChatsController {
                                 Boolean.TRUE.equals(otherActive)
                                         || Boolean.TRUE.equals(otherTyping),
                                 lastIsMine,
-                                lastReadByOther
+                                lastReadByOther,
+                                muted,
+                                pinned
                         );
                         filas.add(new Object[]{ thread, lastAt });
                     }
 
-                    // Más reciente arriba
-                    Collections.sort(filas, new Comparator<Object[]>() {
-                        @Override
-                        public int compare(Object[] a, Object[] b) {
-                            Timestamp ta = (Timestamp) a[1];
-                            Timestamp tb = (Timestamp) b[1];
-                            if (ta == null && tb == null) return 0;
-                            if (ta == null) return 1;
-                            if (tb == null) return -1;
-                            return tb.compareTo(ta);
-                        }
-                    });
-
-                    chatsData.clear();
-                    // Chats demo arriba para que la lista no se vea vacía
-                    if (DemoData.ENABLED) chatsData.addAll(DemoData.chats());
-                    for (Object[] fila : filas) chatsData.add((ChatThread) fila[0]);
-
-                    if (chatsAdapter != null) chatsAdapter.notifyDataSetChanged();
-                    actualizarEstadoVacio();
+                    filasUltimoSnapshot.clear();
+                    filasUltimoSnapshot.addAll(filas);
+                    repintarLista();
                 });
+    }
+
+    private void repintarLista() {
+        // Ordenamos: primero fijados, dentro de cada grupo por timestamp descendente
+        Collections.sort(filasUltimoSnapshot, new Comparator<Object[]>() {
+            @Override
+            public int compare(Object[] a, Object[] b) {
+                ChatThread ca = (ChatThread) a[0];
+                ChatThread cb = (ChatThread) b[0];
+                if (ca.isPinned() != cb.isPinned()) {
+                    return ca.isPinned() ? -1 : 1;
+                }
+                Timestamp ta = (Timestamp) a[1];
+                Timestamp tb = (Timestamp) b[1];
+                if (ta == null && tb == null) return 0;
+                if (ta == null) return 1;
+                if (tb == null) return -1;
+                return tb.compareTo(ta);
+            }
+        });
+
+        chatsData.clear();
+        if (DemoData.ENABLED) chatsData.addAll(DemoData.chats());
+        for (Object[] fila : filasUltimoSnapshot) chatsData.add((ChatThread) fila[0]);
+
+        if (chatsAdapter != null) chatsAdapter.notifyDataSetChanged();
+        actualizarEstadoVacio();
+    }
+
+    /** Listener sobre users/{uid}/chatSettings: cambios de mute/pin del usuario actual. */
+    private void suscribirChatSettings() {
+        String uid = SessionManager.currentUid();
+        if (uid == null) return;
+
+        chatSettingsListener = SessionManager.db()
+                .collection(SessionManager.COLLECTION_USERS)
+                .document(uid)
+                .collection("chatSettings")
+                .addSnapshotListener((snap, e) -> {
+                    if (e != null || snap == null) return;
+
+                    mutedByChatId.clear();
+                    pinnedByChatId.clear();
+                    for (DocumentSnapshot doc : snap.getDocuments()) {
+                        String chatId = doc.getId();
+                        Boolean muted = doc.getBoolean("muted");
+                        Boolean pinned = doc.getBoolean("pinned");
+                        if (Boolean.TRUE.equals(muted)) mutedByChatId.put(chatId, true);
+                        if (Boolean.TRUE.equals(pinned)) pinnedByChatId.put(chatId, true);
+                    }
+
+                    // Reaplicamos los flags al snapshot vigente y repintamos
+                    for (Object[] fila : filasUltimoSnapshot) {
+                        ChatThread t = (ChatThread) fila[0];
+                        boolean muted = Boolean.TRUE.equals(mutedByChatId.get(t.getId()));
+                        boolean pinned = Boolean.TRUE.equals(pinnedByChatId.get(t.getId()));
+                        if (muted != t.isMuted() || pinned != t.isPinned()) {
+                            fila[0] = new ChatThread(
+                                    t.getId(),
+                                    t.getName(),
+                                    t.getLastMessage(),
+                                    t.getTime(),
+                                    t.getUnread(),
+                                    t.isPresenceActive(),
+                                    t.isLastIsMine(),
+                                    t.isLastReadByOther(),
+                                    muted,
+                                    pinned
+                            );
+                        }
+                    }
+                    repintarLista();
+                });
+    }
+
+    // ===== Long-press: silenciar / fijar =====
+
+    private void mostrarDialogoOpcionesChat(ChatThread chat) {
+        String uid = SessionManager.currentUid();
+        if (uid == null) return;
+
+        boolean muted = Boolean.TRUE.equals(mutedByChatId.get(chat.getId()));
+        boolean pinned = Boolean.TRUE.equals(pinnedByChatId.get(chat.getId()));
+
+        String optPin = pinned ? "Desfijar conversación" : "Fijar conversación";
+        String optMute = muted ? "Activar notificaciones" : "Silenciar notificaciones";
+
+        String[] opciones = new String[] { optPin, optMute };
+
+        new AlertDialog.Builder(a)
+                .setTitle(chat.getName())
+                .setItems(opciones, (d, which) -> {
+                    if (which == 0) {
+                        togglePinned(uid, chat.getId(), !pinned);
+                    } else if (which == 1) {
+                        toggleMuted(uid, chat.getId(), !muted);
+                    }
+                })
+                .show();
+    }
+
+    private void togglePinned(String uid, String chatId, boolean newValue) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("pinned", newValue);
+        data.put("updatedAt", FieldValue.serverTimestamp());
+        SessionManager.db()
+                .collection(SessionManager.COLLECTION_USERS)
+                .document(uid)
+                .collection("chatSettings")
+                .document(chatId)
+                .set(data, SetOptions.merge())
+                .addOnFailureListener(e ->
+                        Toast.makeText(a, "No se pudo actualizar el chat", Toast.LENGTH_SHORT).show());
+    }
+
+    private void toggleMuted(String uid, String chatId, boolean newValue) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("muted", newValue);
+        data.put("updatedAt", FieldValue.serverTimestamp());
+        SessionManager.db()
+                .collection(SessionManager.COLLECTION_USERS)
+                .document(uid)
+                .collection("chatSettings")
+                .document(chatId)
+                .set(data, SetOptions.merge())
+                .addOnFailureListener(e ->
+                        Toast.makeText(a, "No se pudo actualizar el chat", Toast.LENGTH_SHORT).show());
     }
 
     /**

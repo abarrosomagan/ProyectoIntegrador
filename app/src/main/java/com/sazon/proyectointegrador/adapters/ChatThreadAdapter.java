@@ -22,12 +22,21 @@ public class ChatThreadAdapter extends RecyclerView.Adapter<ChatThreadAdapter.VH
         void onClick(ChatThread chat);
     }
 
+    public interface OnChatLongClick {
+        void onLongClick(ChatThread chat);
+    }
+
     private final List<ChatThread> data;
     private final OnChatClick listener;
+    private OnChatLongClick longListener;
 
     public ChatThreadAdapter(List<ChatThread> data, OnChatClick listener) {
         this.data = data;
         this.listener = listener;
+    }
+
+    public void setOnChatLongClick(OnChatLongClick l) {
+        this.longListener = l;
     }
 
     @NonNull
@@ -85,15 +94,26 @@ public class ChatThreadAdapter extends RecyclerView.Adapter<ChatThreadAdapter.VH
         // Puntito de presencia (verde) si el otro está activo o escribiendo
         h.presenceDot.setVisibility(c.isPresenceActive() ? View.VISIBLE : View.GONE);
 
-        // Badge de no leídos
+        // Iconos pin / mute
+        h.ivPinned.setVisibility(c.isPinned() ? View.VISIBLE : View.GONE);
+        h.ivMuted.setVisibility(c.isMuted() ? View.VISIBLE : View.GONE);
+
+        // Badge de no leídos: si el chat está silenciado lo bajamos al gris para no llamar la atención
         if (c.getUnread() > 0) {
             h.badge.setVisibility(View.VISIBLE);
             h.tvUnread.setText(String.valueOf(c.getUnread()));
+            int badgeColor = c.isMuted()
+                    ? R.color.texto_secundario
+                    : R.color.color_principal;
+            h.badge.setCardBackgroundColor(
+                    ContextCompat.getColor(h.itemView.getContext(), badgeColor));
             // Cuando hay no leídos, el nombre y el último mensaje se ven más oscuros
             h.tvName.setTextColor(
                     ContextCompat.getColor(h.itemView.getContext(), R.color.texto_principal));
-            h.tvLastMessage.setTextColor(
-                    ContextCompat.getColor(h.itemView.getContext(), R.color.texto_principal));
+            if (!"escribiendo...".equals(preview)) {
+                h.tvLastMessage.setTextColor(
+                        ContextCompat.getColor(h.itemView.getContext(), R.color.texto_principal));
+            }
             h.tvLastMessage.setTypeface(h.tvLastMessage.getTypeface(),
                     android.graphics.Typeface.BOLD);
         } else {
@@ -102,6 +122,13 @@ public class ChatThreadAdapter extends RecyclerView.Adapter<ChatThreadAdapter.VH
         }
 
         h.itemView.setOnClickListener(v -> listener.onClick(c));
+        h.itemView.setOnLongClickListener(v -> {
+            if (longListener != null) {
+                longListener.onLongClick(c);
+                return true;
+            }
+            return false;
+        });
     }
 
     @Override
@@ -112,7 +139,7 @@ public class ChatThreadAdapter extends RecyclerView.Adapter<ChatThreadAdapter.VH
     static class VH extends RecyclerView.ViewHolder {
         TextView tvAvatar, tvName, tvLast, tvTime, tvUnread;
         TextView tvLastMessage;
-        ImageView ivLastStatus;
+        ImageView ivLastStatus, ivPinned, ivMuted;
         View presenceDot;
         MaterialCardView badge;
 
@@ -126,6 +153,8 @@ public class ChatThreadAdapter extends RecyclerView.Adapter<ChatThreadAdapter.VH
             badge = itemView.findViewById(R.id.badge);
             tvUnread = itemView.findViewById(R.id.tvUnread);
             ivLastStatus = itemView.findViewById(R.id.ivLastStatus);
+            ivPinned = itemView.findViewById(R.id.ivPinned);
+            ivMuted = itemView.findViewById(R.id.ivMuted);
             presenceDot = itemView.findViewById(R.id.presenceDot);
         }
     }
