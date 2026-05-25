@@ -130,7 +130,11 @@ public class RecipeDetailActivity extends AppCompatActivity {
                         return;
                     }
                     receta.setId(doc.getId());
+                    // Lectura defensiva del campo views por si no estaba en el constructor
+                    Long viewsLong = doc.getLong("views");
+                    if (viewsLong != null) receta.setViews(viewsLong.intValue());
                     pintarReceta();
+                    registrarVisualizacion();
                 })
                 .addOnFailureListener(e -> {
                     Toast.makeText(this, "No se pudo cargar la receta",
@@ -180,6 +184,21 @@ public class RecipeDetailActivity extends AppCompatActivity {
                 : android.view.View.VISIBLE);
     }
 
+    private void registrarVisualizacion() {
+        String uid = SessionManager.currentUid();
+        if (uid == null || receta == null || receta.getId() == null) return;
+        // No contar la visualización del propio autor (no inflamos nuestras métricas)
+        if (uid.equals(receta.getAuthorId())) return;
+
+        RecipeRepository.registerView(receta.getId(), uid,
+                unused -> {
+                    // Incrementamos el contador local y refrescamos meta
+                    receta.setViews(receta.getViews() + 1);
+                    pintarMetaReceta();
+                },
+                e -> { /* ya estaba contado o falló: nada */ });
+    }
+
     private void pintarMetaReceta() {
         if (receta == null) return;
         StringBuilder meta = new StringBuilder();
@@ -187,6 +206,9 @@ public class RecipeDetailActivity extends AppCompatActivity {
         if (receta.getServings() > 0) appendMeta(meta, receta.getServings() + " raciones");
         if (receta.getDifficulty() != null && !receta.getDifficulty().trim().isEmpty()) {
             appendMeta(meta, receta.getDifficulty().trim());
+        }
+        if (receta.getViews() > 0) {
+            appendMeta(meta, formatViewsCount(receta.getViews()));
         }
         if (tvRecipeMeta != null) {
             tvRecipeMeta.setText(meta.toString());
@@ -403,12 +425,104 @@ public class RecipeDetailActivity extends AppCompatActivity {
 
     private void compartirReceta() {
         if (receta == null) return;
+        new AlertDialog.Builder(this)
+                .setTitle("Compartir receta")
+                .setItems(new String[] { "Enviar a un chat de Sazón", "Compartir fuera de Sazón" },
+                        (d, which) -> {
+                            if (which == 0) elegirChatParaCompartir();
+                            else compartirFuera();
+                        })
+                .show();
+    }
+
+    private void compartirFuera() {
         String texto = "📖 \"" + receta.getTitulo() + "\" de "
                 + receta.getAutor() + " — en Sazón";
         Intent share = new Intent(Intent.ACTION_SEND);
         share.setType("text/plain");
         share.putExtra(Intent.EXTRA_TEXT, texto);
         startActivity(Intent.createChooser(share, "Compartir receta"));
+    }
+
+    private void elegirChatParaCompartir() {
+        String uid = SessionManager.currentUid();
+        if (uid == null) {
+            Toast.makeText(this, "Inicia sesión para enviar la receta", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        SessionManager.db()
+                .collection(SessionManager.COLLECTION_CHATS)
+                .whereArrayContains("participants", uid)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    java.util.List<String[]> opciones = new java.util.ArrayList<>();
+                    for (com.google.firebase.firestore.DocumentSnapshot doc : snap.getDocuments()) {
+                        String chatId = doc.getId();
+                        String otherName = "Chat";
+                        Object mapObj = doc.get("participantsNames");
+                        if (mapObj instanceof java.util.Map) {
+                            java.util.Map<?, ?> names = (java.util.Map<?, ?>) mapObj;
+                            for (java.util.Map.Entry<?, ?> entry : names.entrySet()) {
+                                if (entry.getKey() != null
+                                        && !entry.getKey().toString().equals(uid)) {
+                                    otherName = String.valueOf(entry.getValue());
+                                    break;
+                                }
+                            }
+                        }
+                        opciones.add(new String[] { chatId, otherName });
+                    }
+                    if (opciones.isEmpty()) {
+                        Toast.makeText(this, "No tienes chats todavía", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    String[] nombres = new String[opciones.size()];
+                    for (int i = 0; i < opciones.size(); i++) nombres[i] = opciones.get(i)[1];
+                    new AlertDialog.Builder(this)
+                            .setTitle("Enviar a…")
+                            .setItems(nombres, (d, idx) ->
+                                    enviarRecetaAChat(opciones.get(idx)[0], opciones.get(idx)[1]))
+                            .show();
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "No se pudieron cargar los chats",
+                                Toast.LENGTH_SHORT).show());
+    }
+
+    private void enviarRecetaAChat(String chatId, String nombreChat) {
+        String uid = SessionManager.currentUid();
+        if (uid == null || chatId == null || receta == null) return;
+        String texto = "📖 " + receta.getTitulo() + "\nde " + receta.getAutor()
+                + "\n\nMira esta receta en Sazón.";
+
+        java.util.Map<String, Object> msg = new java.util.HashMap<>();
+        msg.put("text", texto);
+        msg.put("senderId", uid);
+        msg.put("createdAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
+        msg.put("readBy", java.util.Collections.singletonList(uid));
+        msg.put("recipeId", recipeId);
+
+        SessionManager.db()
+                .collection(SessionManager.COLLECTION_CHATS)
+                .document(chatId)
+                .collection("messages")
+                .add(msg)
+                .addOnSuccessListener(ref -> {
+                    // Actualizamos cabecera del chat para que la receta sea el último mensaje
+                    java.util.Map<String, Object> update = new java.util.HashMap<>();
+                    update.put("lastMessage", "📖 " + receta.getTitulo());
+                    update.put("lastSenderId", uid);
+                    update.put("lastMessageAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
+                    SessionManager.db()
+                            .collection(SessionManager.COLLECTION_CHATS)
+                            .document(chatId)
+                            .set(update, com.google.firebase.firestore.SetOptions.merge());
+                    Toast.makeText(this, "Receta enviada a " + nombreChat,
+                            Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "No se pudo enviar",
+                                Toast.LENGTH_SHORT).show());
     }
 
     private void abrirPerfilAutor() {
@@ -463,6 +577,16 @@ public class RecipeDetailActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         if (receta != null && recipeId != null) cargarReceta();
+    }
+
+    /** "1.2k visualizaciones" / "47 visualizaciones". */
+    private static String formatViewsCount(int views) {
+        if (views >= 1000) {
+            double k = views / 1000.0;
+            return String.format(new java.util.Locale("es", "ES"),
+                    "%.1fk visualizaciones", k);
+        }
+        return views + " visualizaciones";
     }
 
     private static String formatRelativeTime(long createdAt) {

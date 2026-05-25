@@ -137,6 +137,52 @@
         app:layout_constraintStart_toStartOf="@id/rvMessages"
         app:layout_constraintTop_toTopOf="@id/rvMessages" />
 
+    <!-- FAB de scroll-to-bottom con badge de mensajes nuevos -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/scrollToBottomFab"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="12dp"
+        android:visibility="gone"
+        app:cardBackgroundColor="@color/fondo_superficie"
+        app:cardCornerRadius="22dp"
+        app:cardElevation="6dp"
+        app:layout_constraintBottom_toTopOf="@id/chat_input_bar"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ImageView
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:layout_gravity="center"
+            android:contentDescription="@null"
+            android:src="@android:drawable/arrow_down_float"
+            app:tint="@color/color_principal" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/scrollToBottomBadge"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_gravity="top|end"
+            android:layout_marginTop="-2dp"
+            android:layout_marginEnd="-2dp"
+            android:visibility="gone"
+            app:cardBackgroundColor="@color/color_principal"
+            app:cardCornerRadius="10dp"
+            app:cardElevation="0dp">
+
+            <TextView
+                android:id="@+id/tvScrollToBottomBadge"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="1"
+                android:textColor="@color/texto_sobre_principal"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+        </com.google.android.material.card.MaterialCardView>
+    </com.google.android.material.card.MaterialCardView>
+
     <!-- Barra de input -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/chat_input_bar"

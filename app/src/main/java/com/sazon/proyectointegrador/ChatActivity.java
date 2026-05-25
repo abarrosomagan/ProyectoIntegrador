@@ -57,6 +57,13 @@ public class ChatActivity extends AppCompatActivity {
     private TextView tvChatEmpty;
     private View presenceDotHeader;
 
+    private View scrollToBottomFab;
+    private View scrollToBottomBadge;
+    private TextView tvScrollToBottomBadge;
+    private boolean atBottom = true;
+    private int mensajesNuevosOcultos = 0;
+    private int previousMessageCount = 0;
+
     private String chatId;
     private String chatName;
     private String otherUid;
@@ -108,10 +115,36 @@ public class ChatActivity extends AppCompatActivity {
         etMessage = findViewById(R.id.etMessage);
         btnSend = findViewById(R.id.btnSend);
 
+        scrollToBottomFab = findViewById(R.id.scrollToBottomFab);
+        scrollToBottomBadge = findViewById(R.id.scrollToBottomBadge);
+        tvScrollToBottomBadge = findViewById(R.id.tvScrollToBottomBadge);
+        if (scrollToBottomFab != null) {
+            scrollToBottomFab.setOnClickListener(v -> {
+                mensajesNuevosOcultos = 0;
+                actualizarFabScroll();
+                scrollToBottom();
+            });
+        }
+
         rvMessages.setLayoutManager(new LinearLayoutManager(this));
+        rvMessages.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@androidx.annotation.NonNull RecyclerView recyclerView, int dx, int dy) {
+                LinearLayoutManager lm = (LinearLayoutManager) recyclerView.getLayoutManager();
+                if (lm == null || adapter == null) return;
+                int last = lm.findLastVisibleItemPosition();
+                boolean nowAtBottom = last >= adapter.getItemCount() - 1;
+                if (nowAtBottom != atBottom) {
+                    atBottom = nowAtBottom;
+                    if (atBottom) mensajesNuevosOcultos = 0;
+                    actualizarFabScroll();
+                }
+            }
+        });
         adapter = new ChatMessageAdapter(items);
         adapter.setOnDeleteMessage(this::eliminarMensaje);
         adapter.setOnReactionToggle(this::reaccionarMensaje);
+        adapter.setOnEditMessage(this::editarMensaje);
         adapter.setMyUid(SessionManager.currentUid());
         rvMessages.setAdapter(adapter);
 
@@ -120,6 +153,9 @@ public class ChatActivity extends AppCompatActivity {
 
         btnSend.setOnClickListener(v -> sendMessage());
         setupTypingWatcher();
+
+        // Restaurar borrador (si el usuario empezó a escribir y salió sin enviar)
+        restaurarBorrador();
     }
 
     private void deduceOtherUid() {
@@ -144,7 +180,26 @@ public class ChatActivity extends AppCompatActivity {
             updatePresence(true);
             listenChatState();
             listenMessages();
+            limpiarFlagsAlEntrar();
         }
+    }
+
+    /**
+     * Al entrar al chat: deshacer "marcar como no leída" y traerlo de vuelta si estaba oculto.
+     */
+    private void limpiarFlagsAlEntrar() {
+        String uid = SessionManager.currentUid();
+        if (uid == null || chatId == null) return;
+        Map<String, Object> data = new HashMap<>();
+        data.put("markedUnread", false);
+        data.put("hidden", false);
+        data.put("updatedAt", FieldValue.serverTimestamp());
+        SessionManager.db()
+                .collection(SessionManager.COLLECTION_USERS)
+                .document(uid)
+                .collection("chatSettings")
+                .document(chatId)
+                .set(data, SetOptions.merge());
     }
 
     @Override
@@ -163,6 +218,43 @@ public class ChatActivity extends AppCompatActivity {
             updateTyping(false);
             updatePresence(false);
         }
+
+        // Guardar borrador al salir del chat
+        guardarBorrador();
+    }
+
+    // ===== Borradores =====
+
+    private static final String PREFS_DRAFTS = "chat_drafts";
+
+    private void restaurarBorrador() {
+        if (etMessage == null || chatId == null) return;
+        String draft = getSharedPreferences(PREFS_DRAFTS, MODE_PRIVATE)
+                .getString(chatId, null);
+        if (draft != null && !draft.isEmpty()) {
+            etMessage.setText(draft);
+            etMessage.setSelection(draft.length());
+        }
+    }
+
+    private void guardarBorrador() {
+        if (etMessage == null || chatId == null) return;
+        String texto = etMessage.getText() != null
+                ? etMessage.getText().toString()
+                : "";
+        if (texto.trim().isEmpty()) {
+            getSharedPreferences(PREFS_DRAFTS, MODE_PRIVATE)
+                    .edit().remove(chatId).apply();
+        } else {
+            getSharedPreferences(PREFS_DRAFTS, MODE_PRIVATE)
+                    .edit().putString(chatId, texto).apply();
+        }
+    }
+
+    private void limpiarBorrador() {
+        if (chatId == null) return;
+        getSharedPreferences(PREFS_DRAFTS, MODE_PRIVATE)
+                .edit().remove(chatId).apply();
     }
 
     private void cargarMensajesDemo() {
@@ -231,27 +323,53 @@ public class ChatActivity extends AppCompatActivity {
                         boolean readByOther = mine && otherUid != null
                                 && readBy != null && readBy.contains(otherUid);
 
+                        String recipeId = doc.getString("recipeId");
+                        boolean edited = Boolean.TRUE.equals(doc.getBoolean("edited"));
+
                         items.add(new ChatMessage(
                                 text != null ? text : "",
                                 mine,
                                 createdAt,
                                 doc.getId(),
                                 readByOther,
-                                reactionsParsed));
+                                reactionsParsed,
+                                recipeId,
+                                edited));
 
                         // Si es del otro y aún no lo he leído, lo marco
                         if (!mine && (readBy == null || !readBy.contains(meUid))) {
                             docsParaMarcar.add(doc);
                         }
                     }
+                    int totalAhora = items.size();
+                    int delta = totalAhora - previousMessageCount;
+                    if (delta > 0 && !atBottom && previousMessageCount > 0) {
+                        mensajesNuevosOcultos += delta;
+                    }
+                    previousMessageCount = totalAhora;
+
                     adapter.notifyDataSetChanged();
                     actualizarEstadoVacio();
-                    scrollToBottom();
+                    if (atBottom) scrollToBottom();
+                    actualizarFabScroll();
 
                     if (!docsParaMarcar.isEmpty()) {
                         marcarComoLeidos(docsParaMarcar, meUid);
                     }
                 });
+    }
+
+    private void actualizarFabScroll() {
+        if (scrollToBottomFab == null) return;
+        scrollToBottomFab.setVisibility(atBottom ? View.GONE : View.VISIBLE);
+        if (scrollToBottomBadge == null || tvScrollToBottomBadge == null) return;
+        if (!atBottom && mensajesNuevosOcultos > 0) {
+            scrollToBottomBadge.setVisibility(View.VISIBLE);
+            tvScrollToBottomBadge.setText(mensajesNuevosOcultos > 9
+                    ? "9+" : String.valueOf(mensajesNuevosOcultos));
+        } else {
+            scrollToBottomBadge.setVisibility(View.GONE);
+        }
     }
 
     /** Añade meUid al array readBy de cada mensaje en un único batch. */
@@ -278,6 +396,7 @@ public class ChatActivity extends AppCompatActivity {
 
         if (DemoData.isDemoChatId(chatId)) {
             etMessage.setText("");
+            limpiarBorrador();
             items.add(new ChatMessage(text, true, System.currentTimeMillis()));
             adapter.notifyDataSetChanged();
             actualizarEstadoVacio();
@@ -292,6 +411,7 @@ public class ChatActivity extends AppCompatActivity {
         }
 
         etMessage.setText("");
+        limpiarBorrador();
 
         Map<String, Object> msg = new HashMap<>();
         msg.put("text", text);
@@ -352,6 +472,43 @@ public class ChatActivity extends AppCompatActivity {
                 .delete()
                 .addOnFailureListener(e ->
                         Toast.makeText(this, "No se pudo eliminar", Toast.LENGTH_SHORT).show());
+    }
+
+    private void editarMensaje(String docId, String currentText) {
+        if (DemoData.isDemoChatId(chatId) || docId == null) return;
+        final android.widget.EditText input = new android.widget.EditText(this);
+        input.setText(currentText);
+        input.setSelection(input.getText().length());
+        int pad = (int) (16 * getResources().getDisplayMetrics().density);
+        android.widget.LinearLayout container = new android.widget.LinearLayout(this);
+        container.setOrientation(android.widget.LinearLayout.VERTICAL);
+        container.setPadding(pad * 2, pad, pad * 2, 0);
+        container.addView(input);
+
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Editar mensaje")
+                .setView(container)
+                .setPositiveButton("Guardar", (d, w) -> {
+                    String nuevo = input.getText() != null
+                            ? input.getText().toString().trim() : "";
+                    if (nuevo.isEmpty()) return;
+                    if (nuevo.equals(currentText.trim())) return;
+                    Map<String, Object> update = new HashMap<>();
+                    update.put("text", nuevo);
+                    update.put("edited", true);
+                    update.put("editedAt", FieldValue.serverTimestamp());
+                    SessionManager.db()
+                            .collection(SessionManager.COLLECTION_CHATS)
+                            .document(chatId)
+                            .collection("messages")
+                            .document(docId)
+                            .set(update, SetOptions.merge())
+                            .addOnFailureListener(e ->
+                                    Toast.makeText(this, "No se pudo editar",
+                                            Toast.LENGTH_SHORT).show());
+                })
+                .setNegativeButton("Cancelar", null)
+                .show();
     }
 
     private void scrollToBottom() {
