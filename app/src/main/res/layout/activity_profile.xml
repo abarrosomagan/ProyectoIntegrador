@@ -187,6 +187,18 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/tvBio" />
 
+            <TextView
+                android:id="@+id/tvProfileStatsLine"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textColor="@color/texto_secundario"
+                android:textSize="12sp"
+                android:visibility="gone"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tvChefRank" />
+
             <!-- Fila de acciones: Editar + Compartir -->
             <LinearLayout
                 android:id="@+id/profileActions"
@@ -197,7 +209,7 @@
                 android:orientation="horizontal"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tvChefRank">
+                app:layout_constraintTop_toBottomOf="@id/tvProfileStatsLine">
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnEditProfile"

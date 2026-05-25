@@ -2,6 +2,9 @@ package com.sazon.proyectointegrador.model;
 
 import com.google.firebase.firestore.Exclude;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Publicacion {
 
     private String id;
@@ -17,6 +20,10 @@ public class Publicacion {
     private int servings;
     private int likes;
     private int views;
+    /** Lista de ingredientes en formato "150 g de harina". Plana, ordenada. */
+    private List<String> ingredientes;
+    /** Lista de pasos de elaboración en orden. */
+    private List<String> pasos;
     private boolean guardada;
     private boolean liked;
 
@@ -74,6 +81,14 @@ public class Publicacion {
 
     public int getViews() { return views; }
 
+    public List<String> getIngredientes() {
+        return ingredientes == null ? new ArrayList<>() : ingredientes;
+    }
+
+    public List<String> getPasos() {
+        return pasos == null ? new ArrayList<>() : pasos;
+    }
+
     /**
      * "guardada" es estado por usuario, NO un campo del doc de la receta.
      * Lo excluimos de la serializacion Firestore — se computa al cargar las
@@ -112,6 +127,10 @@ public class Publicacion {
     public void setLikes(int likes) { this.likes = likes; }
 
     public void setViews(int views) { this.views = views; }
+
+    public void setIngredientes(List<String> ingredientes) { this.ingredientes = ingredientes; }
+
+    public void setPasos(List<String> pasos) { this.pasos = pasos; }
 
     @Exclude
     public void setGuardada(boolean guardada) { this.guardada = guardada; }

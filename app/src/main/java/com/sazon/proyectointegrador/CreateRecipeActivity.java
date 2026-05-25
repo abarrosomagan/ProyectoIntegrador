@@ -30,6 +30,7 @@ public class CreateRecipeActivity extends AppCompatActivity {
 
     private TextInputLayout tilTitle, tilDesc, tilPrepMinutes, tilServings;
     private TextInputEditText etTitle, etDesc, etPrepMinutes, etServings, etDifficulty, etTags;
+    private TextInputEditText etIngredientes, etPasos;
     private TextView tvScreenTitle, tvScreenSubtitle;
     private MaterialButton btnPublish, btnRemoveImage;
     private ImageButton btnCancel;
@@ -73,6 +74,9 @@ public class CreateRecipeActivity extends AppCompatActivity {
         etServings = findViewById(R.id.etServings);
         etDifficulty = findViewById(R.id.etDifficulty);
         etTags = findViewById(R.id.etRecipeTags);
+        etIngredientes = findViewById(R.id.etIngredientes);
+        etPasos = findViewById(R.id.etPasos);
+        setupIngredienteAutocomplete();
         tvScreenTitle = findViewById(R.id.tvCreateRecipeTitle);
         tvScreenSubtitle = findViewById(R.id.tvCreateRecipeSubtitle);
         btnPublish = findViewById(R.id.btnPublishRecipe);
@@ -153,11 +157,16 @@ public class CreateRecipeActivity extends AppCompatActivity {
             }
         }
 
+        java.util.List<String> ingredientes = splitLines(etIngredientes);
+        java.util.List<String> pasos = splitLines(etPasos);
+
         if (isEditMode()) {
-            updateRecipe(title, desc, imageValue, difficulty, tags, prepMinutes, servings);
+            updateRecipe(title, desc, imageValue, difficulty, tags, prepMinutes, servings,
+                    ingredientes, pasos);
         } else {
             createRecipe(uid, authorName, title, desc, imageValue,
-                    difficulty, tags, prepMinutes, servings);
+                    difficulty, tags, prepMinutes, servings,
+                    ingredientes, pasos);
         }
     }
 
@@ -169,9 +178,11 @@ public class CreateRecipeActivity extends AppCompatActivity {
                               @NonNull String difficulty,
                               @NonNull String tags,
                               int prepMinutes,
-                              int servings) {
+                              int servings,
+                              @NonNull java.util.List<String> ingredientes,
+                              @NonNull java.util.List<String> pasos) {
         RecipeRepository.create(uid, authorName, title, desc, imageUrl,
-                difficulty, tags, prepMinutes, servings,
+                difficulty, tags, prepMinutes, servings, ingredientes, pasos,
                 ref -> {
                     Toast.makeText(this, "Receta publicada", Toast.LENGTH_SHORT).show();
                     finish();
@@ -189,9 +200,11 @@ public class CreateRecipeActivity extends AppCompatActivity {
                               @NonNull String difficulty,
                               @NonNull String tags,
                               int prepMinutes,
-                              int servings) {
+                              int servings,
+                              @NonNull java.util.List<String> ingredientes,
+                              @NonNull java.util.List<String> pasos) {
         RecipeRepository.updateRecipe(editingRecipeId, title, desc, imageUrl,
-                difficulty, tags, prepMinutes, servings,
+                difficulty, tags, prepMinutes, servings, ingredientes, pasos,
                 unused -> {
                     Toast.makeText(this, "Receta actualizada", Toast.LENGTH_SHORT).show();
                     finish();
@@ -201,6 +214,56 @@ public class CreateRecipeActivity extends AppCompatActivity {
                     Toast.makeText(this, "No se pudo actualizar la receta",
                             Toast.LENGTH_SHORT).show();
                 });
+    }
+
+    /**
+     * Autocompletado del campo "Buscar ingrediente" basado en el catálogo de
+     * TheMealDB. Al pulsar "+" o "Hecho" se añade la línea al multiline de
+     * ingredientes y se limpia el campo de búsqueda.
+     */
+    private void setupIngredienteAutocomplete() {
+        final com.google.android.material.textfield.MaterialAutoCompleteTextView etBuscar =
+                findViewById(R.id.etBuscarIngrediente);
+        final MaterialButton btnAdd = findViewById(R.id.btnAddIngrediente);
+        if (etBuscar == null || btnAdd == null || etIngredientes == null) return;
+
+        com.sazon.proyectointegrador.util.IngredientCatalog.loadAsync(this, items -> {
+            android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(
+                    this, android.R.layout.simple_list_item_1, items);
+            etBuscar.setAdapter(adapter);
+            etBuscar.setThreshold(1);
+        });
+
+        Runnable addAccion = () -> {
+            String value = etBuscar.getText() != null
+                    ? etBuscar.getText().toString().trim() : "";
+            if (value.isEmpty()) return;
+            String existente = etIngredientes.getText() != null
+                    ? etIngredientes.getText().toString() : "";
+            String prefijo = existente.isEmpty() || existente.endsWith("\n") ? "" : "\n";
+            etIngredientes.append(prefijo + value);
+            etBuscar.setText("");
+            etBuscar.requestFocus();
+        };
+
+        btnAdd.setOnClickListener(v -> addAccion.run());
+        etBuscar.setOnItemClickListener((parent, view, position, id) -> addAccion.run());
+        etBuscar.setOnEditorActionListener((v, actionId, event) -> {
+            addAccion.run();
+            return true;
+        });
+    }
+
+    /** Parte un EditText multilinea en lista de strings, descartando líneas vacías. */
+    private static java.util.List<String> splitLines(TextInputEditText input) {
+        java.util.ArrayList<String> out = new java.util.ArrayList<>();
+        if (input == null || input.getText() == null) return out;
+        String raw = input.getText().toString();
+        for (String line : raw.split("\\r?\\n")) {
+            String t = line.trim();
+            if (!t.isEmpty()) out.add(t);
+        }
+        return out;
     }
 
     private void setupEditMode() {
@@ -247,6 +310,27 @@ public class CreateRecipeActivity extends AppCompatActivity {
                     }
                     if (etServings != null && servings != null && servings > 0) {
                         etServings.setText(String.valueOf(servings));
+                    }
+                    // Repoblar ingredientes y pasos uniéndolos por salto de línea
+                    Object ingObj = doc.get("ingredientes");
+                    if (etIngredientes != null && ingObj instanceof java.util.List) {
+                        StringBuilder sb = new StringBuilder();
+                        for (Object o : (java.util.List<?>) ingObj) {
+                            if (o == null) continue;
+                            if (sb.length() > 0) sb.append('\n');
+                            sb.append(o.toString());
+                        }
+                        etIngredientes.setText(sb.toString());
+                    }
+                    Object pasosObj = doc.get("pasos");
+                    if (etPasos != null && pasosObj instanceof java.util.List) {
+                        StringBuilder sb = new StringBuilder();
+                        for (Object o : (java.util.List<?>) pasosObj) {
+                            if (o == null) continue;
+                            if (sb.length() > 0) sb.append('\n');
+                            sb.append(o.toString());
+                        }
+                        etPasos.setText(sb.toString());
                     }
                     showCurrentImage();
                     setLoading(false);
