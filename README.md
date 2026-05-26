@@ -28,42 +28,44 @@ Ambos autores participan en el diseño, la planificación y el desarrollo técni
 
 ## Reparto de tareas hasta la entrega del 9 de junio
 
-> **Contexto:** la app la quiero dejar pulida para el **1 de junio**, dejando una semana de margen para preparar la defensa. El núcleo de código (Auth, feed, recetas, chat, perfil, seguidores) ya está cerrado y se va a tocar lo mínimo posible hasta entonces para no romper nada justo antes de presentar.
+> **Contexto:** la app la quiero dejar pulida para el **1 de junio**, dejando una semana de margen para integrar lo de Alejandro y preparar la defensa. El núcleo (Auth, feed, recetas, chat, perfil, seguidores) ya está cerrado.
 >
-> Para que **Alejandro** pueda participar sin bloquear el avance ni meter regresiones en el código central, su trabajo se concentra en **documentación, presentación y una sola pantalla aislada de código**. Todo lo que haga vive en su propia rama `Alejandro` (a partir de `Fernando`) y se mergea con PR revisado.
+> Para que **Alejandro** pueda aportar código real sin pisar el avance central, su trabajo se reparte en **pantallas nuevas totalmente aisladas**: cada tarea es una `Activity` o pantalla independiente con sus propios layouts y, como mucho, lecturas/escrituras en colecciones de Firestore que ya tienen reglas listas. Trabaja en la rama `Alejandro` (salida de `Fernando`) y entra a `Fernando` vía Pull Request.
 
 ### Calendario
 
 | Fecha | Hito |
 |---|---|
 | 25 mayo | Cierre del reparto (este documento) |
-| **1 junio** | App pulida y congelada por Fernando |
-| 1 – 7 junio | Alejandro entrega documentación y presentación; Fernando solo corrige bugs críticos |
-| 8 junio | Ensayo de defensa |
-| **9 junio** | Entrega |
+| **1 junio** | Tareas 1–4 de Alejandro mergeadas en `Fernando`. App pulida por Fernando. |
+| 1 – 7 junio | Tareas 5–8 de Alejandro y pulido final conjunto. |
+| 8 junio | Ensayo de defensa con la app final. |
+| **9 junio** | Entrega. |
 
 ### Tareas asignadas a Alejandro Barroso
 
-Trabajará en la rama `Alejandro` (a partir de `Fernando`). Cada entregable se sube como commit o archivo dentro de `docs/` o como PR contra `Fernando`.
+Todas son tareas de desarrollo. Cada una es una pantalla nueva propia: layout XML + Activity Java en su propio paquete `com.sazon.proyectointegrador.alejandro.<feature>`. Fernando deja los puntos de enlace (botones en headers / menú) ya cableados con un `Intent` apuntando a la Activity vacía para que Alejandro solo tenga que rellenarla.
 
-| # | Tarea | Entregable | Fecha tope |
+| # | Tarea | Qué tiene que hacer | Fecha tope |
 |---|---|---|---|
-| 1 | **Pantalla "Acerca de"** (`AboutActivity`): única tarea de código. Activity aislada con versión de la app, nombre, autores, link a GitHub, política de privacidad y licencia. Se enlaza desde un botón en el header del perfil (Fernando deja el botón cableado). | Código + layout | **31 mayo** |
-| 2 | **Manual de usuario** con capturas paso a paso de los flujos: registro, login, crear receta, like/guardar, chat, editar perfil, seguir a alguien. | `docs/manual-usuario.pdf` (o `.docx`) | **4 junio** |
-| 3 | **Diagramas del proyecto**: navegación entre Activities, arquitectura cliente-Firebase, modelo de datos Firestore. | 3 PNG en `docs/diagramas/` | **3 junio** |
-| 4 | **Política de privacidad y términos de uso** (texto sencillo, no requiere validez legal): qué datos guardamos, Firebase como proveedor, derechos del usuario, cómo borrar la cuenta. | `docs/legal/privacy.md` + `docs/legal/terms.md` | **2 junio** |
-| 5 | **Plan de pruebas + QA manual**: tabla con casos de prueba (registro, login, recuperar contraseña, crear receta, like, guardar, chat, perfil) con pasos, resultado esperado y resultado obtenido. Ejecutar en 1 dispositivo físico + 1 emulador y abrir un GitHub Issue por bug encontrado. | `docs/qa.md` | **5 junio** |
-| 6 | **Memoria del proyecto** (PDF, 20-30 páginas): introducción y objetivos, análisis de tecnologías, diseño de la arquitectura, resumen de implementación módulo por módulo, pruebas, conclusiones y trabajo futuro. Puede reutilizar contenido del README, los diagramas y el manual. | `docs/memoria.pdf` | **6 junio** |
-| 7 | **Vídeo demo** de 2-3 minutos: screencast narrado con el flujo registro → publicar receta → like/guardar → chat → perfil. Subir a Drive o YouTube no listado y enlazar en el README. | Link en `docs/demo.md` | **7 junio** |
-| 8 | **Presentación de defensa** (8-10 diapositivas): idea de la app, problema que resuelve, stack tecnológico, demo (vídeo embebido), capturas clave, conclusiones y reparto del equipo. | `docs/defensa.pptx` | **8 junio** |
+| 1 | **`AboutActivity`** — Pantalla "Acerca de". | Layout con logo, versión (`BuildConfig.VERSION_NAME`), autores, link a GitHub y a `docs/legal/privacy.md`. Toolbar con flecha atrás. Sin Firestore. | **28 mayo** |
+| 2 | **`HelpActivity`** — Centro de ayuda con FAQ. | `RecyclerView` con 8-12 preguntas-respuesta expandibles. Lista hardcodeada en un `ArrayList`. Sin Firestore. | **29 mayo** |
+| 3 | **`SettingsActivity`** — Pantalla de ajustes. | Switches y filas para: silenciar todas las notificaciones (`SharedPreferences`), borrar borradores de chat (`SharedPreferences "chat_drafts"` que ya existe), cerrar sesión (`SessionManager.logout()`), borrar cuenta (con `AlertDialog` de confirmación → `FirebaseAuth.getCurrentUser().delete()`). | **31 mayo** |
+| 4 | **`OnboardingActivity`** — 3 slides de bienvenida en el primer arranque. | `ViewPager2` con 3 fragments estáticos (texto + imagen + indicador de paso). Botón "Empezar" en el último slide que abre `LoginActivity` y guarda un flag `onboarding_done=true` en `SharedPreferences`. `SplashActivity` decide si mostrarla. | **1 junio** |
+| 5 | **`ReportActivity`** — Reportar receta o usuario. | Pantalla con dropdown de motivo (spam, contenido inapropiado, abuso, otros), `EditText` para detalle, botón "Enviar". Escribe en la colección `/reports` (las reglas ya permiten `create` si `reporterId == uid`). Se abre desde el menú de receta y del perfil. | **3 junio** |
+| 6 | **`StatsActivity`** — Estadísticas del perfil propio. | Activity que lee `users/{miUid}` y sus subcolecciones / consultas: total recetas publicadas, total likes recibidos sumando, total guardados que tengo, seguidores y siguiendo. Mostrar 4-6 tarjetas con número grande. Acceso desde un botón en el header del perfil propio. | **4 junio** |
+| 7 | **`ExploreActivity`** — Explorar por categorías. | Chips horizontales (`Postres`, `Vegano`, `Rápido`, `Saludable`, `Carnes`, `Pescado`) que filtran un `RecyclerView` de recetas mediante una query `recipes.whereArrayContains("tagsList", ...)`. Si el campo no existe en la receta, filtra en cliente leyendo `tags` (string). Acceso desde un botón nuevo en el feed que Fernando enlazará. | **6 junio** |
+| 8 | **`SearchActivity`** — Buscador global. | Buscador único con dos tabs (`TabLayout`): "Recetas" y "Usuarios". Recetas: query prefix-match sobre `recipes.titulo`. Usuarios: query prefix-match sobre `users.name`. Resultados en `RecyclerView` reutilizando `PublicacionAdapter` y `UserListAdapter`. Acceso desde el icono de lupa que Fernando añade al feed. | **7 junio** |
 
 **Reglas básicas para Alejandro:**
 
-- Trabajar siempre en rama `Alejandro` (la creará Fernando desde `Fernando`). Nunca commitear directamente en `main` ni en `Fernando`.
-- Todo cambio de código debe pasar por Pull Request a `Fernando`.
-- No tocar `app/src/main/java/com/sazon/proyectointegrador/` salvo el directorio nuevo que se le asigne en la tarea 1.
-- No modificar `firestore.rules`, `firebase.json`, `build.gradle.kts` ni el `manifest`.
-- Los entregables de documentación se commitean en `docs/`.
+- Trabajar siempre en rama `Alejandro` (salida de `Fernando`). Cada tarea se cierra con un Pull Request a `Fernando`.
+- Crear todo el código nuevo dentro de **`com.sazon.proyectointegrador.alejandro.<feature>`** (paquete propio por tarea: `alejandro.about`, `alejandro.help`, `alejandro.settings`, etc.).
+- Los layouts nuevos viven en `app/src/main/res/layout/` con prefijo `alej_` (ej. `alej_activity_about.xml`, `alej_item_faq.xml`).
+- Puede usar libremente `SessionManager`, `RecipeImageHelper`, los adapters existentes y los modelos.
+- **No tocar** archivos existentes en `com.sazon.proyectointegrador` salvo añadir su `<activity>` al `AndroidManifest.xml`. Los puntos de enlace los cablea Fernando.
+- **No tocar** `firestore.rules`, `firebase.json`, `build.gradle.kts`, `colors.xml`, `themes.xml`, ni los layouts existentes.
+- Cualquier nueva colección que necesite (no debería) debe pedirse a Fernando para añadir su regla.
 
 ### Tareas reservadas a Fernando Cecilia hasta el 1 de junio
 
