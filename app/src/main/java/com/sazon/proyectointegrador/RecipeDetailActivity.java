@@ -269,11 +269,37 @@ public class RecipeDetailActivity extends AppCompatActivity {
         if (tvRecipeTags != null) {
             if (tags == null || tags.trim().isEmpty()) {
                 tvRecipeTags.setVisibility(android.view.View.GONE);
+                tvRecipeTags.setOnClickListener(null);
             } else {
                 tvRecipeTags.setText(formatTags(tags));
                 tvRecipeTags.setVisibility(android.view.View.VISIBLE);
+                tvRecipeTags.setOnClickListener(v -> elegirTagYExplorar(tags));
             }
         }
+    }
+
+    private void elegirTagYExplorar(String rawTags) {
+        java.util.ArrayList<String> opciones = new java.util.ArrayList<>();
+        for (String part : rawTags.split(",")) {
+            String t = part.trim();
+            if (!t.isEmpty()) opciones.add(t);
+        }
+        if (opciones.isEmpty()) return;
+        if (opciones.size() == 1) {
+            abrirExplorarConTag(opciones.get(0));
+            return;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("Explorar por…")
+                .setItems(opciones.toArray(new String[0]),
+                        (d, idx) -> abrirExplorarConTag(opciones.get(idx)))
+                .show();
+    }
+
+    private void abrirExplorarConTag(String tag) {
+        Intent i = new Intent(this, ExploreActivity.class);
+        i.putExtra(ExploreActivity.EXTRA_QUERY, tag);
+        startActivity(i);
     }
 
     private static void appendMeta(StringBuilder out, String value) {

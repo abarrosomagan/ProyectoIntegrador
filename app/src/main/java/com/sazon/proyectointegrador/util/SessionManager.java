@@ -107,6 +107,13 @@ public class SessionManager {
     public static void signOutCompat(@NonNull Context ctx) {
         auth().signOut();
         new SessionManager(ctx).logout();
+        // Limpieza extra de datos locales que pertenecen a la sesión
+        ctx.getApplicationContext()
+                .getSharedPreferences("chat_drafts", Context.MODE_PRIVATE)
+                .edit().clear().apply();
+        ctx.getApplicationContext()
+                .getSharedPreferences("shopping_list", Context.MODE_PRIVATE)
+                .edit().clear().apply();
     }
 
     // ===== Documento de usuario en Firestore =====

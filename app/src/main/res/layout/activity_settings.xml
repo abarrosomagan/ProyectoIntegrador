@@ -234,15 +234,53 @@
                 app:strokeWidth="1.5dp" />
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSettingsLogout"
+                android:id="@+id/btnSettingsChangePassword"
+                style="?attr/materialButtonOutlinedStyle"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
                 android:layout_marginTop="10dp"
+                android:text="Cambiar contraseña"
+                android:textAllCaps="false"
+                android:textColor="@color/color_principal_variante"
+                app:cornerRadius="16dp"
+                app:strokeColor="@color/color_principal_variante"
+                app:strokeWidth="1.5dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSettingsClearDrafts"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="10dp"
+                android:text="Borrar borradores de chat"
+                android:textAllCaps="false"
+                android:textColor="@color/color_principal_variante"
+                app:cornerRadius="16dp"
+                app:strokeColor="@color/color_principal_variante"
+                app:strokeWidth="1.5dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSettingsLogout"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="18dp"
                 android:text="Cerrar sesion"
                 android:textAllCaps="false"
                 android:textColor="@color/texto_sobre_principal"
                 app:backgroundTint="@color/color_like"
                 app:cornerRadius="16dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSettingsDeleteAccount"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="6dp"
+                android:layout_marginBottom="20dp"
+                android:text="Eliminar mi cuenta"
+                android:textAllCaps="false"
+                android:textColor="@color/color_like"
+                android:textSize="13sp" />
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 </androidx.constraintlayout.widget.ConstraintLayout>

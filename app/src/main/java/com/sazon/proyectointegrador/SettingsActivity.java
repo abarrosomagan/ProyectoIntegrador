@@ -50,6 +50,79 @@ public class SettingsActivity extends AppCompatActivity {
     private void setupListeners() {
         if (btnRefresh != null) btnRefresh.setOnClickListener(v -> loadAccount());
         if (btnLogout != null) btnLogout.setOnClickListener(v -> confirmLogout());
+
+        MaterialButton btnChangePwd = findViewById(R.id.btnSettingsChangePassword);
+        if (btnChangePwd != null) btnChangePwd.setOnClickListener(v -> cambiarContrasena());
+
+        MaterialButton btnClearDrafts = findViewById(R.id.btnSettingsClearDrafts);
+        if (btnClearDrafts != null) btnClearDrafts.setOnClickListener(v -> borrarBorradoresChat());
+
+        MaterialButton btnDelete = findViewById(R.id.btnSettingsDeleteAccount);
+        if (btnDelete != null) btnDelete.setOnClickListener(v -> confirmarEliminarCuenta());
+    }
+
+    private void cambiarContrasena() {
+        FirebaseUser user = SessionManager.currentUser();
+        if (user == null || user.getEmail() == null) {
+            Toast.makeText(this, "No hay sesión activa", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String email = user.getEmail();
+        new AlertDialog.Builder(this)
+                .setTitle("Cambiar contraseña")
+                .setMessage("Te enviaremos un correo a " + email
+                        + " con un enlace para cambiar tu contraseña.")
+                .setPositiveButton("Enviar correo", (d, w) ->
+                        com.google.firebase.auth.FirebaseAuth.getInstance()
+                                .sendPasswordResetEmail(email)
+                                .addOnSuccessListener(v -> Toast.makeText(this,
+                                        "Correo de cambio de contraseña enviado",
+                                        Toast.LENGTH_LONG).show())
+                                .addOnFailureListener(e -> Toast.makeText(this,
+                                        "No se pudo enviar el correo",
+                                        Toast.LENGTH_SHORT).show()))
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
+    private void borrarBorradoresChat() {
+        getSharedPreferences("chat_drafts", MODE_PRIVATE).edit().clear().apply();
+        Toast.makeText(this, "Borradores de chat eliminados",
+                Toast.LENGTH_SHORT).show();
+    }
+
+    private void confirmarEliminarCuenta() {
+        new AlertDialog.Builder(this)
+                .setTitle("Eliminar cuenta")
+                .setMessage("Esta acción cerrará tu sesión y eliminará tu cuenta "
+                        + "de Firebase. Tus recetas y mensajes se mantendrán hasta "
+                        + "que decidas borrarlos manualmente desde otra cuenta.\n\n"
+                        + "Esta acción no se puede deshacer.")
+                .setPositiveButton("Eliminar definitivamente", (d, w) -> eliminarCuenta())
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
+    private void eliminarCuenta() {
+        FirebaseUser user = SessionManager.currentUser();
+        if (user == null) {
+            goLogin();
+            return;
+        }
+        user.delete()
+                .addOnSuccessListener(v -> {
+                    Toast.makeText(this, "Cuenta eliminada", Toast.LENGTH_SHORT).show();
+                    SessionManager.signOutCompat(this);
+                    goLogin();
+                })
+                .addOnFailureListener(e -> {
+                    // Firebase requiere reautenticación reciente para eliminar
+                    Toast.makeText(this,
+                            "Por seguridad, vuelve a iniciar sesión e intenta borrar de nuevo",
+                            Toast.LENGTH_LONG).show();
+                    SessionManager.signOutCompat(this);
+                    goLogin();
+                });
     }
 
     private void loadAccount() {

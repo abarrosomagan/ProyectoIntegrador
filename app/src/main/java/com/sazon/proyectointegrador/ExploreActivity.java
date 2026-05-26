@@ -79,7 +79,16 @@ public class ExploreActivity extends AppCompatActivity {
         setupTabs();
         setupSearch();
         loadInitialData();
+
+        // Si llegamos con un tag prellenado (desde el detalle de receta) lo aplicamos
+        String preset = getIntent().getStringExtra(EXTRA_QUERY);
+        if (preset != null && !preset.isEmpty() && etSearch != null) {
+            etSearch.setText(preset);
+            etSearch.setSelection(etSearch.getText().length());
+        }
     }
+
+    public static final String EXTRA_QUERY = "EXTRA_QUERY";
 
     private void bind() {
         rv = findViewById(R.id.rvExplore);
