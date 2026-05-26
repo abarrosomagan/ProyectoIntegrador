@@ -500,6 +500,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
         msg.put("senderId", uid);
         msg.put("createdAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
         msg.put("readBy", java.util.Collections.singletonList(uid));
+        msg.put("recipeId", recipeId);
 
         SessionManager.db()
                 .collection(SessionManager.COLLECTION_CHATS)

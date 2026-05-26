@@ -45,6 +45,10 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         void onReact(@NonNull String docId, @NonNull String emoji, boolean nowReacting);
     }
 
+    public interface OnEditMessage {
+        void onEdit(@NonNull String docId, @NonNull String currentText);
+    }
+
     /** Emojis que se ofrecen en el menú de reacciones. */
     static final String[] EMOJI_OPTIONS = { "❤", "😂", "😮", "🔥", "👏" };
 
@@ -57,6 +61,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
     private final List<ChatItem> data;
     private OnDeleteMessage deleteListener;
     private OnReactionToggle reactionListener;
+    private OnEditMessage editListener;
     private String myUid;
 
     public ChatMessageAdapter(List<ChatItem> data) {
@@ -69,6 +74,10 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
 
     public void setOnReactionToggle(OnReactionToggle listener) {
         this.reactionListener = listener;
+    }
+
+    public void setOnEditMessage(OnEditMessage listener) {
+        this.editListener = listener;
     }
 
     public void setMyUid(String uid) {
@@ -106,7 +115,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
                 }
             }
             ((MessageVH) holder).bind((ChatMessage) item, consecutivo,
-                    deleteListener, reactionListener, myUid);
+                    deleteListener, reactionListener, editListener, myUid);
         }
     }
 
@@ -156,6 +165,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         void bind(ChatMessage m, boolean consecutivo,
                   OnDeleteMessage deleteListener,
                   OnReactionToggle reactionListener,
+                  OnEditMessage editListener,
                   String myUid) {
 
             Context ctx = root.getContext();
@@ -204,11 +214,30 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
             // Reacciones
             pintarReacciones(ctx, m, myUid, reactionListener);
 
-            // Long-press → menú reacciones + copiar + eliminar
+            // Long-press → menú reacciones + copiar + editar + eliminar
             bubble.setOnLongClickListener(v -> {
-                mostrarMenuMensaje(ctx, m, deleteListener, reactionListener, myUid);
+                mostrarMenuMensaje(ctx, m, deleteListener, reactionListener, editListener, myUid);
                 return true;
             });
+
+            // Si el mensaje es una receta compartida, hacemos la burbuja tappable
+            if (m.getRecipeId() != null && !m.getRecipeId().isEmpty()) {
+                final String rid = m.getRecipeId();
+                bubble.setOnClickListener(v -> {
+                    android.content.Intent i = new android.content.Intent(ctx,
+                            com.sazon.proyectointegrador.RecipeDetailActivity.class);
+                    i.putExtra(com.sazon.proyectointegrador.RecipeDetailActivity.EXTRA_RECIPE_ID, rid);
+                    ctx.startActivity(i);
+                });
+            } else {
+                bubble.setOnClickListener(null);
+                bubble.setClickable(false);
+            }
+
+            // Indicador "Editado"
+            if (m.isEdited()) {
+                tvTime.setText(tvTime.getText() + " · editado");
+            }
         }
 
         private void pintarReacciones(Context ctx, ChatMessage m, String myUid,
@@ -260,31 +289,45 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         private void mostrarMenuMensaje(Context ctx, ChatMessage m,
                                         OnDeleteMessage delete,
                                         OnReactionToggle reactionListener,
+                                        OnEditMessage editListener,
                                         String myUid) {
-            boolean puedeBorrar = m.isMine() && m.getDocId() != null && delete != null;
             boolean puedeReaccionar = m.getDocId() != null && reactionListener != null;
+            // Solo se puede editar texto plano del usuario, no recetas compartidas
+            boolean puedeEditar = m.isMine() && m.getDocId() != null
+                    && editListener != null
+                    && (m.getRecipeId() == null || m.getRecipeId().isEmpty());
+            boolean puedeBorrar = m.isMine() && m.getDocId() != null && delete != null;
 
-            int numActions = (puedeReaccionar ? 1 : 0) + 1 /* copiar */ + (puedeBorrar ? 1 : 0);
-            String[] opciones = new String[numActions];
-            int idx = 0;
-            if (puedeReaccionar) opciones[idx++] = "Reaccionar…";
-            opciones[idx++] = "Copiar";
-            if (puedeBorrar) opciones[idx] = "Eliminar";
+            java.util.List<String> ops = new java.util.ArrayList<>();
+            if (puedeReaccionar) ops.add("Reaccionar…");
+            ops.add("Copiar");
+            if (puedeEditar)   ops.add("Editar");
+            if (puedeBorrar)   ops.add("Eliminar");
 
-            final int idxReaccionar = puedeReaccionar ? 0 : -1;
-            final int idxCopiar = puedeReaccionar ? 1 : 0;
-            final int idxEliminar = puedeBorrar ? opciones.length - 1 : -1;
+            String[] opciones = ops.toArray(new String[0]);
 
             new AlertDialog.Builder(ctx)
                     .setItems(opciones, (d, which) -> {
-                        if (which == idxReaccionar) {
+                        String accion = opciones[which];
+                        if ("Reaccionar…".equals(accion)) {
                             elegirReaccion(ctx, m, reactionListener, myUid);
-                        } else if (which == idxCopiar) {
+                        } else if ("Copiar".equals(accion)) {
                             copiarAlPortapapeles(ctx, m.getText());
-                        } else if (which == idxEliminar) {
-                            delete.onDelete(m.getDocId());
+                        } else if ("Editar".equals(accion)) {
+                            editListener.onEdit(m.getDocId(), m.getText() == null ? "" : m.getText());
+                        } else if ("Eliminar".equals(accion)) {
+                            confirmarEliminar(ctx, m, delete);
                         }
                     })
+                    .show();
+        }
+
+        private void confirmarEliminar(Context ctx, ChatMessage m, OnDeleteMessage delete) {
+            new AlertDialog.Builder(ctx)
+                    .setTitle("Eliminar mensaje")
+                    .setMessage("Se borrará para todos.")
+                    .setPositiveButton("Eliminar", (d, w) -> delete.onDelete(m.getDocId()))
+                    .setNegativeButton("Cancelar", null)
                     .show();
         }
 
