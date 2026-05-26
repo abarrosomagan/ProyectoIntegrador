@@ -26,6 +26,58 @@ Ambos autores participan en el diseño, la planificación y el desarrollo técni
 
 ---
 
+## Reparto de tareas hasta la entrega del 9 de junio
+
+> **Contexto:** la app la quiero dejar pulida para el **1 de junio**, dejando una semana de margen para preparar la defensa. El núcleo de código (Auth, feed, recetas, chat, perfil, seguidores) ya está cerrado y se va a tocar lo mínimo posible hasta entonces para no romper nada justo antes de presentar.
+>
+> Para que **Alejandro** pueda participar sin bloquear el avance ni meter regresiones en el código central, su trabajo se concentra en **documentación, presentación y una sola pantalla aislada de código**. Todo lo que haga vive en su propia rama `Alejandro` (a partir de `Fernando`) y se mergea con PR revisado.
+
+### Calendario
+
+| Fecha | Hito |
+|---|---|
+| 25 mayo | Cierre del reparto (este documento) |
+| **1 junio** | App pulida y congelada por Fernando |
+| 1 – 7 junio | Alejandro entrega documentación y presentación; Fernando solo corrige bugs críticos |
+| 8 junio | Ensayo de defensa |
+| **9 junio** | Entrega |
+
+### Tareas asignadas a Alejandro Barroso
+
+Trabajará en la rama `Alejandro` (a partir de `Fernando`). Cada entregable se sube como commit o archivo dentro de `docs/` o como PR contra `Fernando`.
+
+| # | Tarea | Entregable | Fecha tope |
+|---|---|---|---|
+| 1 | **Pantalla "Acerca de"** (`AboutActivity`): única tarea de código. Activity aislada con versión de la app, nombre, autores, link a GitHub, política de privacidad y licencia. Se enlaza desde un botón en el header del perfil (Fernando deja el botón cableado). | Código + layout | **31 mayo** |
+| 2 | **Manual de usuario** con capturas paso a paso de los flujos: registro, login, crear receta, like/guardar, chat, editar perfil, seguir a alguien. | `docs/manual-usuario.pdf` (o `.docx`) | **4 junio** |
+| 3 | **Diagramas del proyecto**: navegación entre Activities, arquitectura cliente-Firebase, modelo de datos Firestore. | 3 PNG en `docs/diagramas/` | **3 junio** |
+| 4 | **Política de privacidad y términos de uso** (texto sencillo, no requiere validez legal): qué datos guardamos, Firebase como proveedor, derechos del usuario, cómo borrar la cuenta. | `docs/legal/privacy.md` + `docs/legal/terms.md` | **2 junio** |
+| 5 | **Plan de pruebas + QA manual**: tabla con casos de prueba (registro, login, recuperar contraseña, crear receta, like, guardar, chat, perfil) con pasos, resultado esperado y resultado obtenido. Ejecutar en 1 dispositivo físico + 1 emulador y abrir un GitHub Issue por bug encontrado. | `docs/qa.md` | **5 junio** |
+| 6 | **Memoria del proyecto** (PDF, 20-30 páginas): introducción y objetivos, análisis de tecnologías, diseño de la arquitectura, resumen de implementación módulo por módulo, pruebas, conclusiones y trabajo futuro. Puede reutilizar contenido del README, los diagramas y el manual. | `docs/memoria.pdf` | **6 junio** |
+| 7 | **Vídeo demo** de 2-3 minutos: screencast narrado con el flujo registro → publicar receta → like/guardar → chat → perfil. Subir a Drive o YouTube no listado y enlazar en el README. | Link en `docs/demo.md` | **7 junio** |
+| 8 | **Presentación de defensa** (8-10 diapositivas): idea de la app, problema que resuelve, stack tecnológico, demo (vídeo embebido), capturas clave, conclusiones y reparto del equipo. | `docs/defensa.pptx` | **8 junio** |
+
+**Reglas básicas para Alejandro:**
+
+- Trabajar siempre en rama `Alejandro` (la creará Fernando desde `Fernando`). Nunca commitear directamente en `main` ni en `Fernando`.
+- Todo cambio de código debe pasar por Pull Request a `Fernando`.
+- No tocar `app/src/main/java/com/sazon/proyectointegrador/` salvo el directorio nuevo que se le asigne en la tarea 1.
+- No modificar `firestore.rules`, `firebase.json`, `build.gradle.kts` ni el `manifest`.
+- Los entregables de documentación se commitean en `docs/`.
+
+### Tareas reservadas a Fernando Cecilia hasta el 1 de junio
+
+Pulido final del código y QA propio. Ningún feature grande nuevo; solo redondear lo ya implementado.
+
+- Revisión visual y ajustes finos del feed, chats, perfil y recetas.
+- Bugs reportados por Alejandro durante el QA.
+- Limpieza de logs y código muerto.
+- Comprobación de las reglas de Firestore en producción.
+- Mantenimiento del README y de `docs/`.
+- Etiquetar la versión `v1.0` el 1 de junio.
+
+---
+
 ## Cuentas de prueba
 
 Para revisar la app sin registrarse hay cuentas de demostración en Firebase Authentication. Son cuentas de prueba con datos ficticios:
