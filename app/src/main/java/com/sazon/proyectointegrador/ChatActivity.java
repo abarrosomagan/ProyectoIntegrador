@@ -147,7 +147,26 @@ public class ChatActivity extends AppCompatActivity {
             updatePresence(true);
             listenChatState();
             listenMessages();
+            limpiarFlagsAlEntrar();
         }
+    }
+
+    /**
+     * Al entrar al chat: deshacer "marcar como no leída" y traerlo de vuelta si estaba oculto.
+     */
+    private void limpiarFlagsAlEntrar() {
+        String uid = SessionManager.currentUid();
+        if (uid == null || chatId == null) return;
+        Map<String, Object> data = new HashMap<>();
+        data.put("markedUnread", false);
+        data.put("hidden", false);
+        data.put("updatedAt", FieldValue.serverTimestamp());
+        SessionManager.db()
+                .collection(SessionManager.COLLECTION_USERS)
+                .document(uid)
+                .collection("chatSettings")
+                .document(chatId)
+                .set(data, SetOptions.merge());
     }
 
     @Override

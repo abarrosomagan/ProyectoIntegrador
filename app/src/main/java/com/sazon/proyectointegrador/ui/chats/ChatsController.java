@@ -1,7 +1,9 @@
 package com.sazon.proyectointegrador.ui.chats;
 
 import android.content.Intent;
+import android.text.Editable;
 import android.text.InputType;
+import android.text.TextWatcher;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -52,12 +54,17 @@ public class ChatsController {
     private ListenerRegistration chatsListener;
     private ListenerRegistration chatSettingsListener;
 
-    /** Caches por chatId del estado silenciado / fijado del usuario actual. */
+    /** Caches por chatId del estado silenciado / fijado / oculto / marcado no leído del usuario actual. */
     private final HashMap<String, Boolean> mutedByChatId = new HashMap<>();
     private final HashMap<String, Boolean> pinnedByChatId = new HashMap<>();
+    private final HashMap<String, Boolean> hiddenByChatId = new HashMap<>();
+    private final HashMap<String, Boolean> markedUnreadByChatId = new HashMap<>();
 
-    /** Guardamos el último snapshot ordenado para repintar tras cambios de chatSettings. */
+    /** Guardamos el último snapshot ordenado para repintar tras cambios de chatSettings o de filtro. */
     private final ArrayList<Object[]> filasUltimoSnapshot = new ArrayList<>();
+
+    private EditText etBuscarChats;
+    private String filtroActual = "";
 
     public ChatsController(AppCompatActivity activity) {
         this.a = activity;
@@ -87,6 +94,7 @@ public class ChatsController {
         rvChats = a.findViewById(R.id.rvChats);
         tvChatsVacio = a.findViewById(R.id.tvChatsVacio);
         btnNuevaConversacion = a.findViewById(R.id.btnNuevaConversacion);
+        etBuscarChats = a.findViewById(R.id.etBuscarChats);
     }
 
     private void setupRecycler() {
@@ -108,6 +116,16 @@ public class ChatsController {
     private void setupListeners() {
         if (btnNuevaConversacion != null) {
             btnNuevaConversacion.setOnClickListener(v -> mostrarDialogoNuevoChat());
+        }
+        if (etBuscarChats != null) {
+            etBuscarChats.addTextChangedListener(new TextWatcher() {
+                @Override public void beforeTextChanged(CharSequence s, int st, int c, int af) {}
+                @Override public void onTextChanged(CharSequence s, int st, int b, int c) {}
+                @Override public void afterTextChanged(Editable s) {
+                    filtroActual = s == null ? "" : s.toString().trim().toLowerCase(Locale.getDefault());
+                    repintarLista();
+                }
+            });
         }
     }
 
@@ -188,13 +206,16 @@ public class ChatsController {
 
                         boolean muted = Boolean.TRUE.equals(mutedByChatId.get(chatId));
                         boolean pinned = Boolean.TRUE.equals(pinnedByChatId.get(chatId));
+                        boolean markedUnread = Boolean.TRUE.equals(markedUnreadByChatId.get(chatId));
+
+                        int unreadValue = (hasUnread(uid, lastSenderId, lastAt, lastReadAt) || markedUnread) ? 1 : 0;
 
                         ChatThread thread = new ChatThread(
                                 chatId,
                                 otherName,
                                 preview,
                                 formatChatTime(lastAt),
-                                hasUnread(uid, lastSenderId, lastAt, lastReadAt) ? 1 : 0,
+                                unreadValue,
                                 Boolean.TRUE.equals(otherActive)
                                         || Boolean.TRUE.equals(otherTyping),
                                 lastIsMine,
@@ -231,11 +252,29 @@ public class ChatsController {
         });
 
         chatsData.clear();
-        if (DemoData.ENABLED) chatsData.addAll(DemoData.chats());
-        for (Object[] fila : filasUltimoSnapshot) chatsData.add((ChatThread) fila[0]);
+        if (DemoData.ENABLED) {
+            for (ChatThread demo : DemoData.chats()) {
+                if (coincideFiltro(demo)) chatsData.add(demo);
+            }
+        }
+        boolean buscando = !filtroActual.isEmpty();
+        for (Object[] fila : filasUltimoSnapshot) {
+            ChatThread t = (ChatThread) fila[0];
+            // Ocultos no aparecen salvo que estés buscando explícitamente por nombre
+            if (!buscando && Boolean.TRUE.equals(hiddenByChatId.get(t.getId()))) continue;
+            if (!coincideFiltro(t)) continue;
+            chatsData.add(t);
+        }
 
         if (chatsAdapter != null) chatsAdapter.notifyDataSetChanged();
         actualizarEstadoVacio();
+    }
+
+    private boolean coincideFiltro(ChatThread t) {
+        if (filtroActual.isEmpty()) return true;
+        String name = t.getName() == null ? "" : t.getName().toLowerCase(Locale.getDefault());
+        String last = t.getLastMessage() == null ? "" : t.getLastMessage().toLowerCase(Locale.getDefault());
+        return name.contains(filtroActual) || last.contains(filtroActual);
     }
 
     /** Listener sobre users/{uid}/chatSettings: cambios de mute/pin del usuario actual. */
@@ -252,12 +291,14 @@ public class ChatsController {
 
                     mutedByChatId.clear();
                     pinnedByChatId.clear();
+                    hiddenByChatId.clear();
+                    markedUnreadByChatId.clear();
                     for (DocumentSnapshot doc : snap.getDocuments()) {
                         String chatId = doc.getId();
-                        Boolean muted = doc.getBoolean("muted");
-                        Boolean pinned = doc.getBoolean("pinned");
-                        if (Boolean.TRUE.equals(muted)) mutedByChatId.put(chatId, true);
-                        if (Boolean.TRUE.equals(pinned)) pinnedByChatId.put(chatId, true);
+                        if (Boolean.TRUE.equals(doc.getBoolean("muted"))) mutedByChatId.put(chatId, true);
+                        if (Boolean.TRUE.equals(doc.getBoolean("pinned"))) pinnedByChatId.put(chatId, true);
+                        if (Boolean.TRUE.equals(doc.getBoolean("hidden"))) hiddenByChatId.put(chatId, true);
+                        if (Boolean.TRUE.equals(doc.getBoolean("markedUnread"))) markedUnreadByChatId.put(chatId, true);
                     }
 
                     // Reaplicamos los flags al snapshot vigente y repintamos
@@ -265,13 +306,16 @@ public class ChatsController {
                         ChatThread t = (ChatThread) fila[0];
                         boolean muted = Boolean.TRUE.equals(mutedByChatId.get(t.getId()));
                         boolean pinned = Boolean.TRUE.equals(pinnedByChatId.get(t.getId()));
-                        if (muted != t.isMuted() || pinned != t.isPinned()) {
+                        boolean markedUnread = Boolean.TRUE.equals(markedUnreadByChatId.get(t.getId()));
+                        int newUnread = Math.max(t.getUnread(), markedUnread ? 1 : 0);
+
+                        if (muted != t.isMuted() || pinned != t.isPinned() || newUnread != t.getUnread()) {
                             fila[0] = new ChatThread(
                                     t.getId(),
                                     t.getName(),
                                     t.getLastMessage(),
                                     t.getTime(),
-                                    t.getUnread(),
+                                    newUnread,
                                     t.isPresenceActive(),
                                     t.isLastIsMine(),
                                     t.isLastReadByOther(),
@@ -284,7 +328,7 @@ public class ChatsController {
                 });
     }
 
-    // ===== Long-press: silenciar / fijar =====
+    // ===== Long-press: silenciar / fijar / marcar no leída / ocultar =====
 
     private void mostrarDialogoOpcionesChat(ChatThread chat) {
         String uid = SessionManager.currentUid();
@@ -292,22 +336,65 @@ public class ChatsController {
 
         boolean muted = Boolean.TRUE.equals(mutedByChatId.get(chat.getId()));
         boolean pinned = Boolean.TRUE.equals(pinnedByChatId.get(chat.getId()));
+        boolean markedUnread = Boolean.TRUE.equals(markedUnreadByChatId.get(chat.getId()));
 
         String optPin = pinned ? "Desfijar conversación" : "Fijar conversación";
         String optMute = muted ? "Activar notificaciones" : "Silenciar notificaciones";
+        String optUnread = markedUnread ? "Marcar como leída" : "Marcar como no leída";
+        String optDelete = "Borrar conversación";
 
-        String[] opciones = new String[] { optPin, optMute };
+        String[] opciones = new String[] { optPin, optMute, optUnread, optDelete };
 
         new AlertDialog.Builder(a)
                 .setTitle(chat.getName())
                 .setItems(opciones, (d, which) -> {
-                    if (which == 0) {
-                        togglePinned(uid, chat.getId(), !pinned);
-                    } else if (which == 1) {
-                        toggleMuted(uid, chat.getId(), !muted);
-                    }
+                    if (which == 0)      togglePinned(uid, chat.getId(), !pinned);
+                    else if (which == 1) toggleMuted(uid, chat.getId(), !muted);
+                    else if (which == 2) toggleMarkedUnread(uid, chat.getId(), !markedUnread);
+                    else if (which == 3) confirmarBorrarConversacion(uid, chat);
                 })
                 .show();
+    }
+
+    private void toggleMarkedUnread(String uid, String chatId, boolean newValue) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("markedUnread", newValue);
+        data.put("updatedAt", FieldValue.serverTimestamp());
+        SessionManager.db()
+                .collection(SessionManager.COLLECTION_USERS)
+                .document(uid)
+                .collection("chatSettings")
+                .document(chatId)
+                .set(data, SetOptions.merge())
+                .addOnFailureListener(e ->
+                        Toast.makeText(a, "No se pudo actualizar el chat", Toast.LENGTH_SHORT).show());
+    }
+
+    private void confirmarBorrarConversacion(String uid, ChatThread chat) {
+        new AlertDialog.Builder(a)
+                .setTitle("Borrar conversación")
+                .setMessage("Se ocultará para ti. " + chat.getName()
+                        + " seguirá teniéndola en su lista.")
+                .setPositiveButton("Borrar", (d, w) -> ocultarConversacion(uid, chat.getId()))
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
+    private void ocultarConversacion(String uid, String chatId) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("hidden", true);
+        data.put("pinned", false);
+        data.put("updatedAt", FieldValue.serverTimestamp());
+        SessionManager.db()
+                .collection(SessionManager.COLLECTION_USERS)
+                .document(uid)
+                .collection("chatSettings")
+                .document(chatId)
+                .set(data, SetOptions.merge())
+                .addOnSuccessListener(v ->
+                        Toast.makeText(a, "Conversación borrada de tu lista", Toast.LENGTH_SHORT).show())
+                .addOnFailureListener(e ->
+                        Toast.makeText(a, "No se pudo borrar", Toast.LENGTH_SHORT).show());
     }
 
     private void togglePinned(String uid, String chatId, boolean newValue) {
@@ -395,8 +482,9 @@ public class ChatsController {
         if (!SessionManager.isAuthenticated()) return;
 
         EditText input = new EditText(a);
-        input.setHint("Correo del otro usuario");
-        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
+        input.setHint("Nombre o correo del otro usuario");
+        input.setInputType(InputType.TYPE_CLASS_TEXT
+                | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
 
         int pad = (int) (16 * a.getResources().getDisplayMetrics().density);
         LinearLayout container = new LinearLayout(a);
@@ -408,29 +496,84 @@ public class ChatsController {
                 .setTitle("Nueva conversación")
                 .setView(container)
                 .setPositiveButton("Buscar", (d, w) -> {
-                    String email = input.getText() != null ? input.getText().toString().trim() : "";
-                    if (!email.isEmpty()) buscarUsuarioYAbrirChat(email);
+                    String q = input.getText() != null ? input.getText().toString().trim() : "";
+                    if (!q.isEmpty()) buscarUsuarioYAbrirChat(q);
                 })
                 .setNegativeButton("Cancelar", null)
                 .show();
     }
 
-    private void buscarUsuarioYAbrirChat(String email) {
+    private void buscarUsuarioYAbrirChat(String query) {
+        if (query.contains("@")) {
+            // Búsqueda exacta por email
+            SessionManager.db()
+                    .collection(SessionManager.COLLECTION_USERS)
+                    .whereEqualTo("email", query)
+                    .limit(1)
+                    .get()
+                    .addOnSuccessListener(snap -> {
+                        if (snap.isEmpty()) {
+                            Toast.makeText(a, "No hemos encontrado a nadie con ese correo",
+                                    Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        DocumentSnapshot doc = snap.getDocuments().get(0);
+                        String otherUid = doc.getId();
+                        String otherName = doc.getString("name");
+                        if (otherName == null || otherName.isEmpty()) otherName = query;
+                        crearOAbrirChatCon(otherUid, otherName);
+                    })
+                    .addOnFailureListener(e ->
+                            Toast.makeText(a, "Error buscando usuario", Toast.LENGTH_SHORT).show());
+            return;
+        }
+        // Búsqueda por nombre con prefijo
         SessionManager.db()
                 .collection(SessionManager.COLLECTION_USERS)
-                .whereEqualTo("email", email)
-                .limit(1)
+                .orderBy("name")
+                .startAt(query)
+                .endAt(query + "")
+                .limit(10)
                 .get()
                 .addOnSuccessListener(snap -> {
                     if (snap.isEmpty()) {
-                        Toast.makeText(a, "No hemos encontrado a nadie con ese correo", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(a, "No hemos encontrado a nadie con ese nombre",
+                                Toast.LENGTH_SHORT).show();
                         return;
                     }
-                    DocumentSnapshot doc = snap.getDocuments().get(0);
-                    String otherUid = doc.getId();
-                    String otherName = doc.getString("name");
-                    if (otherName == null || otherName.isEmpty()) otherName = email;
-                    crearOAbrirChatCon(otherUid, otherName);
+                    String myUid = SessionManager.currentUid();
+                    java.util.List<DocumentSnapshot> candidatos = new java.util.ArrayList<>();
+                    for (DocumentSnapshot doc : snap.getDocuments()) {
+                        if (myUid == null || !doc.getId().equals(myUid)) candidatos.add(doc);
+                    }
+                    if (candidatos.isEmpty()) {
+                        Toast.makeText(a, "Eres tú mismo", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    if (candidatos.size() == 1) {
+                        DocumentSnapshot doc = candidatos.get(0);
+                        String nombre = doc.getString("name");
+                        crearOAbrirChatCon(doc.getId(),
+                                nombre != null ? nombre : query);
+                        return;
+                    }
+                    // Varios candidatos → diálogo de selección
+                    String[] nombres = new String[candidatos.size()];
+                    for (int i = 0; i < candidatos.size(); i++) {
+                        String n = candidatos.get(i).getString("name");
+                        String em = candidatos.get(i).getString("email");
+                        nombres[i] = (n != null ? n : "Sin nombre")
+                                + (em != null ? "  ·  " + em : "");
+                    }
+                    new AlertDialog.Builder(a)
+                            .setTitle("Elige a quién escribir")
+                            .setItems(nombres, (d, idx) -> {
+                                DocumentSnapshot doc = candidatos.get(idx);
+                                String nombre = doc.getString("name");
+                                crearOAbrirChatCon(doc.getId(),
+                                        nombre != null ? nombre : query);
+                            })
+                            .show();
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(a, "Error buscando usuario", Toast.LENGTH_SHORT).show());
