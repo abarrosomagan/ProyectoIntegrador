@@ -53,6 +53,10 @@ public class ChatsController {
 
     private ListenerRegistration chatsListener;
     private ListenerRegistration chatSettingsListener;
+    private ListenerRegistration blockedListener;
+
+    /** uids que tengo bloqueados — sus chats no aparecen en la lista. */
+    private final java.util.HashSet<String> bloqueados = new java.util.HashSet<>();
 
     /** Caches por chatId del estado silenciado / fijado / oculto / marcado no leído del usuario actual. */
     private final HashMap<String, Boolean> mutedByChatId = new HashMap<>();
@@ -74,6 +78,7 @@ public class ChatsController {
         bind();
         setupRecycler();
         setupListeners();
+        suscribirBloqueados();
         suscribirChatSettings();
         suscribirChats();
         actualizarEstadoVacio();
@@ -88,6 +93,28 @@ public class ChatsController {
             chatSettingsListener.remove();
             chatSettingsListener = null;
         }
+        if (blockedListener != null) {
+            blockedListener.remove();
+            blockedListener = null;
+        }
+    }
+
+    /** Listener sobre users/{uid}/blocked: lista en tiempo real. */
+    private void suscribirBloqueados() {
+        String uid = SessionManager.currentUid();
+        if (uid == null) return;
+        blockedListener = SessionManager.db()
+                .collection(SessionManager.COLLECTION_USERS)
+                .document(uid)
+                .collection("blocked")
+                .addSnapshotListener((snap, e) -> {
+                    if (e != null || snap == null) return;
+                    bloqueados.clear();
+                    for (DocumentSnapshot doc : snap.getDocuments()) {
+                        bloqueados.add(doc.getId());
+                    }
+                    repintarLista();
+                });
     }
 
     private void bind() {
@@ -223,7 +250,7 @@ public class ChatsController {
                                 muted,
                                 pinned
                         );
-                        filas.add(new Object[]{ thread, lastAt });
+                        filas.add(new Object[]{ thread, lastAt, otherUid });
                     }
 
                     filasUltimoSnapshot.clear();
@@ -260,6 +287,9 @@ public class ChatsController {
         boolean buscando = !filtroActual.isEmpty();
         for (Object[] fila : filasUltimoSnapshot) {
             ChatThread t = (ChatThread) fila[0];
+            String otherUid = fila.length > 2 ? (String) fila[2] : null;
+            // Chats con usuarios bloqueados no aparecen nunca
+            if (otherUid != null && bloqueados.contains(otherUid)) continue;
             // Ocultos no aparecen salvo que estés buscando explícitamente por nombre
             if (!buscando && Boolean.TRUE.equals(hiddenByChatId.get(t.getId()))) continue;
             if (!coincideFiltro(t)) continue;
@@ -583,6 +613,11 @@ public class ChatsController {
         String myUid = SessionManager.currentUid();
         if (myUid == null || myUid.equals(otherUid)) {
             Toast.makeText(a, "No puedes hablar contigo mismo", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (bloqueados.contains(otherUid)) {
+            Toast.makeText(a, "Has bloqueado a " + otherName
+                    + ". Desbloquéalo desde su perfil.", Toast.LENGTH_LONG).show();
             return;
         }
 

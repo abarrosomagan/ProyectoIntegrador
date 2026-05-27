@@ -57,6 +57,7 @@ public class ProfileActivity extends AppCompatActivity {
     private final ArrayList<Publicacion> recetas = new ArrayList<>();
     private boolean siguiendo = false;
     private long followersCount = 0;
+    private boolean bloqueado = false;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -121,8 +122,14 @@ public class ProfileActivity extends AppCompatActivity {
         View btnMore = findViewById(R.id.btnMoreProfile);
         if (btnEdit != null) btnEdit.setVisibility(View.GONE);
         if (btnShare != null) btnShare.setVisibility(View.GONE);
-        if (btnMore != null) btnMore.setVisibility(View.GONE);
+        // En perfil ajeno mantenemos el menú ⋮ para Bloquear / Desbloquear
+        if (btnMore != null) {
+            btnMore.setVisibility(View.VISIBLE);
+            btnMore.setOnClickListener(v -> mostrarMenuPerfilAjeno());
+        }
         if (btnFollow != null) btnFollow.setVisibility(View.VISIBLE);
+
+        cargarEstadoBloqueo();
 
         // Pestañas: en perfil ajeno solo mostramos "Mis recetas" (sin guardadas).
         View btnTabSaved = findViewById(R.id.btnTabSaved);
@@ -298,6 +305,76 @@ public class ProfileActivity extends AppCompatActivity {
             btnFollow.setBackgroundTintList(
                     getColorStateList(R.color.color_principal_variante));
             btnFollow.setStrokeWidth(0);
+        }
+    }
+
+    // ===== Bloqueo de usuario =====
+
+    private void cargarEstadoBloqueo() {
+        String meUid = SessionManager.currentUid();
+        if (meUid == null || otherUid == null || meUid.equals(otherUid)) return;
+        SessionManager.db()
+                .collection(SessionManager.COLLECTION_USERS)
+                .document(meUid)
+                .collection("blocked")
+                .document(otherUid)
+                .get()
+                .addOnSuccessListener(doc -> bloqueado = doc != null && doc.exists());
+    }
+
+    private void mostrarMenuPerfilAjeno() {
+        String optBlock = bloqueado ? "Desbloquear usuario" : "Bloquear usuario";
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setItems(new String[] { optBlock }, (d, which) -> {
+                    if (which == 0) confirmarBloqueo();
+                })
+                .show();
+    }
+
+    private void confirmarBloqueo() {
+        if (bloqueado) {
+            cambiarBloqueo(false);
+            return;
+        }
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Bloquear usuario")
+                .setMessage("Sus mensajes y recetas se ocultarán de tu experiencia. "
+                        + "Podrás desbloquearle más adelante desde su perfil.")
+                .setPositiveButton("Bloquear", (d, w) -> cambiarBloqueo(true))
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
+    private void cambiarBloqueo(boolean nuevo) {
+        String meUid = SessionManager.currentUid();
+        if (meUid == null || otherUid == null) return;
+        com.google.firebase.firestore.DocumentReference ref = SessionManager.db()
+                .collection(SessionManager.COLLECTION_USERS)
+                .document(meUid)
+                .collection("blocked")
+                .document(otherUid);
+        if (nuevo) {
+            java.util.Map<String, Object> data = new java.util.HashMap<>();
+            data.put("createdAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
+            ref.set(data)
+                    .addOnSuccessListener(v -> {
+                        bloqueado = true;
+                        Toast.makeText(this, "Usuario bloqueado", Toast.LENGTH_SHORT).show();
+                        // Si lo seguía, dejarlo de seguir como parte del bloqueo
+                        if (siguiendo) alternarSigo();
+                    })
+                    .addOnFailureListener(e ->
+                            Toast.makeText(this, "No se pudo bloquear",
+                                    Toast.LENGTH_SHORT).show());
+        } else {
+            ref.delete()
+                    .addOnSuccessListener(v -> {
+                        bloqueado = false;
+                        Toast.makeText(this, "Usuario desbloqueado", Toast.LENGTH_SHORT).show();
+                    })
+                    .addOnFailureListener(e ->
+                            Toast.makeText(this, "No se pudo desbloquear",
+                                    Toast.LENGTH_SHORT).show());
         }
     }
 
