@@ -180,6 +180,12 @@ public class FeedController {
             btnHeaderActivity.setOnClickListener(v -> a.startActivity(new Intent(a,
                     com.sazon.proyectointegrador.ActivityActivity.class)));
         }
+        com.google.android.material.button.MaterialButton btnShopping =
+                a.findViewById(R.id.btnHeaderShopping);
+        if (btnShopping != null) {
+            btnShopping.setOnClickListener(v -> a.startActivity(new Intent(a,
+                    com.sazon.proyectointegrador.ShoppingListActivity.class)));
+        }
     }
 
     private void listenUnreadActivity() {
