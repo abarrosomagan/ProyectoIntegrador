@@ -109,12 +109,20 @@ public class RecipeDetailActivity extends AppCompatActivity {
         ImageButton btnShare = findViewById(R.id.btnShareRecipe);
         if (btnShare != null) btnShare.setOnClickListener(v -> compartirReceta());
 
-        if (btnLike != null) btnLike.setOnClickListener(v -> darLike());
+        if (btnLike != null) {
+            btnLike.setOnClickListener(v -> darLike());
+            btnLike.setOnLongClickListener(v -> { mostrarLikers(); return true; });
+        }
         if (btnSave != null) btnSave.setOnClickListener(v -> alternarGuardado());
         if (btnEdit != null) btnEdit.setOnClickListener(v -> editarReceta());
         if (btnDelete != null) btnDelete.setOnClickListener(v -> confirmarEliminar());
         if (btnViewProfile != null) btnViewProfile.setOnClickListener(v -> abrirPerfilAutor());
         if (btnSendComment != null) btnSendComment.setOnClickListener(v -> enviarComentario());
+
+        MaterialButton btnCook = findViewById(R.id.btnCookMode);
+        if (btnCook != null) btnCook.setOnClickListener(v -> abrirModoCocinar());
+        MaterialButton btnAddShopping = findViewById(R.id.btnAddToShoppingList);
+        if (btnAddShopping != null) btnAddShopping.setOnClickListener(v -> anadirALaCompra());
     }
 
     private void cargarReceta() {
@@ -573,6 +581,88 @@ public class RecipeDetailActivity extends AppCompatActivity {
         i.putExtra(ProfileActivity.EXTRA_USERNAME, receta.getAutor());
         i.putExtra(ProfileActivity.EXTRA_IS_OWN_PROFILE, false);
         startActivity(i);
+    }
+
+    private void mostrarLikers() {
+        if (recipeId == null) return;
+        SessionManager.db()
+                .collection(RecipeRepository.COLLECTION_RECIPES)
+                .document(recipeId)
+                .collection("likes")
+                .limit(50)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    if (snap.isEmpty()) {
+                        Toast.makeText(this, "Aún nadie ha dado like 💔",
+                                Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    java.util.List<String> uids = new java.util.ArrayList<>();
+                    for (com.google.firebase.firestore.DocumentSnapshot doc : snap.getDocuments()) {
+                        uids.add(doc.getId());
+                    }
+                    resolverNombresYAbrirDialogo(uids);
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "No se pudo cargar la lista",
+                                Toast.LENGTH_SHORT).show());
+    }
+
+    private void resolverNombresYAbrirDialogo(java.util.List<String> uids) {
+        java.util.List<String> nombres = new java.util.ArrayList<>();
+        int[] pendientes = { uids.size() };
+        Runnable showDialog = () -> {
+            new AlertDialog.Builder(this)
+                    .setTitle("A " + nombres.size() + " chefs les gusta")
+                    .setItems(nombres.toArray(new String[0]), null)
+                    .setPositiveButton("Cerrar", null)
+                    .show();
+        };
+        for (String uid : uids) {
+            SessionManager.db()
+                    .collection(SessionManager.COLLECTION_USERS)
+                    .document(uid)
+                    .get()
+                    .addOnCompleteListener(task -> {
+                        String n = null;
+                        if (task.isSuccessful() && task.getResult() != null) {
+                            n = task.getResult().getString("name");
+                        }
+                        if (n == null || n.isEmpty()) n = "Chef anónimo";
+                        nombres.add(n);
+                        pendientes[0]--;
+                        if (pendientes[0] == 0) {
+                            java.util.Collections.sort(nombres, String.CASE_INSENSITIVE_ORDER);
+                            showDialog.run();
+                        }
+                    });
+        }
+    }
+
+    private void abrirModoCocinar() {
+        if (receta == null || recipeId == null) return;
+        if (receta.getPasos() == null || receta.getPasos().isEmpty()) {
+            Toast.makeText(this,
+                    "Esta receta aún no tiene pasos paso a paso. Edítala para añadirlos.",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+        startActivity(CookModeActivity.intentFor(this, recipeId));
+    }
+
+    private void anadirALaCompra() {
+        if (receta == null) return;
+        java.util.List<String> ings = receta.getIngredientes();
+        if (ings == null || ings.isEmpty()) {
+            Toast.makeText(this,
+                    "Esta receta no tiene ingredientes para añadir a la lista.",
+                    Toast.LENGTH_SHORT).show();
+            return;
+        }
+        com.sazon.proyectointegrador.util.ShoppingList.addAll(this, ings,
+                receta.getTitulo() == null ? "" : receta.getTitulo());
+        Toast.makeText(this, "Ingredientes añadidos a tu lista de la compra",
+                Toast.LENGTH_SHORT).show();
     }
 
     private void editarReceta() {
