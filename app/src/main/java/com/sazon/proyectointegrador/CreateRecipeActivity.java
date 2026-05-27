@@ -76,6 +76,7 @@ public class CreateRecipeActivity extends AppCompatActivity {
         etTags = findViewById(R.id.etRecipeTags);
         etIngredientes = findViewById(R.id.etIngredientes);
         etPasos = findViewById(R.id.etPasos);
+        setupIngredienteAutocomplete();
         tvScreenTitle = findViewById(R.id.tvCreateRecipeTitle);
         tvScreenSubtitle = findViewById(R.id.tvCreateRecipeSubtitle);
         btnPublish = findViewById(R.id.btnPublishRecipe);
@@ -213,6 +214,44 @@ public class CreateRecipeActivity extends AppCompatActivity {
                     Toast.makeText(this, "No se pudo actualizar la receta",
                             Toast.LENGTH_SHORT).show();
                 });
+    }
+
+    /**
+     * Autocompletado del campo "Buscar ingrediente" basado en el catálogo de
+     * TheMealDB. Al pulsar "+" o "Hecho" se añade la línea al multiline de
+     * ingredientes y se limpia el campo de búsqueda.
+     */
+    private void setupIngredienteAutocomplete() {
+        final com.google.android.material.textfield.MaterialAutoCompleteTextView etBuscar =
+                findViewById(R.id.etBuscarIngrediente);
+        final MaterialButton btnAdd = findViewById(R.id.btnAddIngrediente);
+        if (etBuscar == null || btnAdd == null || etIngredientes == null) return;
+
+        com.sazon.proyectointegrador.util.IngredientCatalog.loadAsync(this, items -> {
+            android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(
+                    this, android.R.layout.simple_list_item_1, items);
+            etBuscar.setAdapter(adapter);
+            etBuscar.setThreshold(1);
+        });
+
+        Runnable addAccion = () -> {
+            String value = etBuscar.getText() != null
+                    ? etBuscar.getText().toString().trim() : "";
+            if (value.isEmpty()) return;
+            String existente = etIngredientes.getText() != null
+                    ? etIngredientes.getText().toString() : "";
+            String prefijo = existente.isEmpty() || existente.endsWith("\n") ? "" : "\n";
+            etIngredientes.append(prefijo + value);
+            etBuscar.setText("");
+            etBuscar.requestFocus();
+        };
+
+        btnAdd.setOnClickListener(v -> addAccion.run());
+        etBuscar.setOnItemClickListener((parent, view, position, id) -> addAccion.run());
+        etBuscar.setOnEditorActionListener((v, actionId, event) -> {
+            addAccion.run();
+            return true;
+        });
     }
 
     /** Parte un EditText multilinea en lista de strings, descartando líneas vacías. */
