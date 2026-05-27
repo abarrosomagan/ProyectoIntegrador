@@ -224,6 +224,58 @@
                 android:textColor="@color/texto_principal"
                 android:textSize="15sp" />
 
+            <!-- Ingredientes -->
+            <TextView
+                android:id="@+id/tvIngredientesHeader"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="24dp"
+                android:text="Ingredientes"
+                android:textColor="@color/texto_secundario"
+                android:textAllCaps="true"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tvIngredientes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="6dp"
+                android:layout_marginEnd="20dp"
+                android:lineSpacingExtra="6dp"
+                android:textColor="@color/texto_principal"
+                android:textSize="15sp"
+                android:visibility="gone" />
+
+            <!-- Pasos -->
+            <TextView
+                android:id="@+id/tvPasosHeader"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="22dp"
+                android:text="Pasos"
+                android:textColor="@color/texto_secundario"
+                android:textAllCaps="true"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tvPasos"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="6dp"
+                android:layout_marginEnd="20dp"
+                android:lineSpacingExtra="8dp"
+                android:textColor="@color/texto_principal"
+                android:textSize="15sp"
+                android:visibility="gone" />
+
             <!-- Acciones: Like + Save -->
             <LinearLayout
                 android:layout_width="match_parent"

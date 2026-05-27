@@ -40,6 +40,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
     private boolean liked = false;
 
     private TextView tvTitle, tvAuthor, tvAuthorAvatar, tvDate, tvDescription, tvRecipeMeta, tvRecipeTags;
+    private TextView tvIngredientesHeader, tvIngredientes, tvPasosHeader, tvPasos;
     private ImageView recipeHero;
     private TextView tvCommentsTitle, tvCommentsEmpty;
     private TextInputEditText etComment;
@@ -77,6 +78,10 @@ public class RecipeDetailActivity extends AppCompatActivity {
         tvAuthorAvatar = findViewById(R.id.tvAuthorAvatar);
         tvDate = findViewById(R.id.tvRecipeDate);
         tvDescription = findViewById(R.id.tvRecipeDescription);
+        tvIngredientesHeader = findViewById(R.id.tvIngredientesHeader);
+        tvIngredientes = findViewById(R.id.tvIngredientes);
+        tvPasosHeader = findViewById(R.id.tvPasosHeader);
+        tvPasos = findViewById(R.id.tvPasos);
         tvRecipeMeta = findViewById(R.id.tvRecipeMeta);
         tvRecipeTags = findViewById(R.id.tvRecipeTags);
         recipeHero = findViewById(R.id.recipeHero);
@@ -160,6 +165,7 @@ public class RecipeDetailActivity extends AppCompatActivity {
         tvDescription.setText(desc == null || desc.isEmpty()
                 ? "(Sin descripción)" : desc);
 
+        pintarIngredientesYPasos();
         pintarMetaReceta();
 
         String imageUrl = receta.getImageUrl();
@@ -197,6 +203,41 @@ public class RecipeDetailActivity extends AppCompatActivity {
                     pintarMetaReceta();
                 },
                 e -> { /* ya estaba contado o falló: nada */ });
+    }
+
+    private void pintarIngredientesYPasos() {
+        if (receta == null) return;
+        java.util.List<String> ings = receta.getIngredientes();
+        if (ings != null && !ings.isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+            for (String i : ings) {
+                if (i == null || i.isEmpty()) continue;
+                if (sb.length() > 0) sb.append('\n');
+                sb.append("•  ").append(i);
+            }
+            if (tvIngredientes != null) tvIngredientes.setText(sb.toString());
+            if (tvIngredientesHeader != null) tvIngredientesHeader.setVisibility(android.view.View.VISIBLE);
+            if (tvIngredientes != null) tvIngredientes.setVisibility(android.view.View.VISIBLE);
+        } else {
+            if (tvIngredientesHeader != null) tvIngredientesHeader.setVisibility(android.view.View.GONE);
+            if (tvIngredientes != null) tvIngredientes.setVisibility(android.view.View.GONE);
+        }
+        java.util.List<String> pasos = receta.getPasos();
+        if (pasos != null && !pasos.isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+            int n = 1;
+            for (String p : pasos) {
+                if (p == null || p.isEmpty()) continue;
+                if (sb.length() > 0) sb.append("\n\n");
+                sb.append(n++).append(". ").append(p);
+            }
+            if (tvPasos != null) tvPasos.setText(sb.toString());
+            if (tvPasosHeader != null) tvPasosHeader.setVisibility(android.view.View.VISIBLE);
+            if (tvPasos != null) tvPasos.setVisibility(android.view.View.VISIBLE);
+        } else {
+            if (tvPasosHeader != null) tvPasosHeader.setVisibility(android.view.View.GONE);
+            if (tvPasos != null) tvPasos.setVisibility(android.view.View.GONE);
+        }
     }
 
     private void pintarMetaReceta() {

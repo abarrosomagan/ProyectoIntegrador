@@ -53,6 +53,8 @@ public final class RecipeRepository {
                               @NonNull String tags,
                               int prepMinutes,
                               int servings,
+                              @NonNull java.util.List<String> ingredientes,
+                              @NonNull java.util.List<String> pasos,
                               @NonNull OnSuccessListener<DocumentReference> onOk,
                               @NonNull OnFailureListener onErr) {
 
@@ -66,6 +68,8 @@ public final class RecipeRepository {
         data.put("tags", tags);
         data.put("prepMinutes", prepMinutes);
         data.put("servings", servings);
+        data.put("ingredientes", ingredientes);
+        data.put("pasos", pasos);
         data.put("likes", 0);
         data.put("createdAt", System.currentTimeMillis());
 
@@ -286,6 +290,8 @@ public final class RecipeRepository {
                                     @NonNull String tags,
                                     int prepMinutes,
                                     int servings,
+                                    @NonNull java.util.List<String> ingredientes,
+                                    @NonNull java.util.List<String> pasos,
                                     @NonNull OnSuccessListener<Void> onOk,
                                     @NonNull OnFailureListener onErr) {
         Map<String, Object> data = new HashMap<>();
@@ -296,6 +302,8 @@ public final class RecipeRepository {
         data.put("tags", tags);
         data.put("prepMinutes", prepMinutes);
         data.put("servings", servings);
+        data.put("ingredientes", ingredientes);
+        data.put("pasos", pasos);
         data.put("updatedAt", System.currentTimeMillis());
 
         SessionManager.db()
