@@ -24,43 +24,7 @@ Developer y organizador del proyecto
 
 Ambos autores participan en el diseño, la planificación y el desarrollo técnico de la aplicación.
 
----
-
-## Reparto de tareas hasta la entrega del 9 de junio
-
-> **Contexto:** la app la quiero dejar pulida para el **1 de junio**. El núcleo (Auth, feed, recetas, chat, perfil, seguidores) ya está cerrado.
->
-> A **Alejandro** le quedan dos pantallas pequeñas y aisladas. Que se las apañe con la documentación de Android — son Activities estándar, sin Firestore, sin tocar el resto del código.
-
-### Tareas asignadas a Alejandro Barroso
-
-Cuatro pantallas nuevas que conforman el **bloque "Ayuda y entorno"** de la app. Todas viven en su paquete propio `com.sazon.proyectointegrador.alejandro` y se enlazan desde un nuevo apartado del menú de ajustes que Fernando deja cableado. Trabaja en una rama suya salida de `Fernando` y entra por Pull Request.
-
-| # | Tarea | Descripción | Fecha tope |
-|---|---|---|---|
-| 1 | **`AboutActivity`** — Pantalla "Acerca de" de Sazón. | Layout con cabecera ilustrada (logo + nombre de la app), bloque de versión leído de `BuildConfig.VERSION_NAME` y `VERSION_CODE`, tarjeta con los nombres y rol de los autores (Fernando Cecilia, Alejandro Barroso) y avatares con iniciales, botón "Ver en GitHub" que abre el repositorio mediante `Intent.ACTION_VIEW`, y un pie de página con la frase descriptiva y el copyright. Toolbar con flecha atrás. Sin Firestore, sin permisos. | **29 mayo** |
-| 2 | **`HelpActivity`** — Centro de ayuda con preguntas frecuentes. | `RecyclerView` con 10 entradas pregunta-respuesta agrupadas por categorías (Cuenta, Recetas, Chat, Privacidad). Cada item es expandible al tocarlo (anima la flecha y muestra la respuesta debajo). Filtrado por categoría con chips arriba y `EditText` de búsqueda que filtra en cliente sobre el texto. Datos hardcodeados en un `ArrayList<FaqItem>` dentro de la propia Activity. Sin Firestore. | **31 mayo** |
-| 3 | **`ContactActivity`** — Pantalla de contacto y soporte. | Formulario con campos "Asunto", "Tu correo" (precargado con `SessionManager.currentEmail()` si hay sesión) y "Mensaje". Botón "Enviar" que lanza un `Intent.ACTION_SENDTO` con `mailto:` al email de soporte del equipo (constante en la Activity) con asunto y cuerpo prellenados. Botón secundario "Copiar email" que copia la dirección al portapapeles con un `Toast`. Validación básica de campos vacíos antes de enviar. | **3 junio** |
-| 4 | **`LicensesActivity`** — Créditos y licencias de terceros. | `RecyclerView` con la lista de librerías open source usadas en la app (Firebase BoM, Material Components, AndroidX AppCompat, ConstraintLayout, Glide, RecyclerView, etc.) y su licencia correspondiente (Apache 2.0 / MIT). Cada item muestra nombre, versión, licencia y un botón pequeño "Ver licencia" que abre la URL oficial mediante `Intent.ACTION_VIEW`. Datos hardcodeados. Toolbar con flecha atrás. | **5 junio** |
-| 5 | **`ReportActivity`** — Reportar contenido inapropiado. | Pantalla con `Spinner` de motivo (spam, contenido inapropiado, suplantación de identidad, abuso, otros), `EditText` multilinea para detalles opcionales, y campo oculto con el tipo de target (`recipe` / `user`) y su id, que Fernando pasa por `Intent.putExtra`. Botón "Enviar reporte" que escribe un documento en la colección `/reports` de Firestore con `reporterId`, `targetType`, `targetId`, `reason`, `details` y `createdAt`. Las reglas ya permiten el `create` si `reporterId == uid`. Toast de confirmación + `finish()`. | **6 junio** |
-
-**Reglas básicas:**
-
-- Código nuevo dentro de `com.sazon.proyectointegrador.alejandro`.
-- Layouts en `app/src/main/res/layout/` con prefijo `alej_`.
-- Único cambio fuera de su paquete: añadir las dos `<activity>` al `AndroidManifest.xml`. Los puntos de enlace en el menú los cablea Fernando.
-- No tocar nada más.
-
-### Tareas reservadas a Fernando Cecilia hasta el 1 de junio
-
-Pulido final del código y QA propio. Ningún feature grande nuevo; solo redondear lo ya implementado.
-
-- Revisión visual y ajustes finos del feed, chats, perfil y recetas.
-- Bugs reportados por Alejandro durante el QA.
-- Limpieza de logs y código muerto.
-- Comprobación de las reglas de Firestore en producción.
-- Mantenimiento del README y de `docs/`.
-- Etiquetar la versión `v1.0` el 1 de junio.
+> **Eh Ale 👋** — te dejo cinco pantallas sueltas para que arranques con el bloque "Ayuda y entorno": `AboutActivity`, `HelpActivity`, `ContactActivity`, `LicensesActivity` y `ReportActivity` (esta última escribe en `/reports`, las reglas ya están). Mete todo en `com.sazon.proyectointegrador.alejandro` y los layouts con prefijo `alej_`. Saca una rama propia desde `Fernando` y vas tirando PRs según las cierres. No toques nada fuera de tu paquete. ¡Suerte! 🍳
 
 ---
 
