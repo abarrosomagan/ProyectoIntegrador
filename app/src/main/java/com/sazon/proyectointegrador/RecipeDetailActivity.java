@@ -485,11 +485,31 @@ public class RecipeDetailActivity extends AppCompatActivity {
     }
 
     private void compartirFuera() {
-        String texto = "📖 \"" + receta.getTitulo() + "\" de "
-                + receta.getAutor() + " — en Sazón";
+        StringBuilder sb = new StringBuilder();
+        sb.append("📖 ").append(receta.getTitulo() != null ? receta.getTitulo() : "")
+          .append("\n").append("Por ").append(receta.getAutor() != null ? receta.getAutor() : "")
+          .append("\n");
+        if (receta.getDescripcion() != null && !receta.getDescripcion().isEmpty()) {
+            sb.append("\n").append(receta.getDescripcion()).append("\n");
+        }
+        java.util.List<String> ings = receta.getIngredientes();
+        if (ings != null && !ings.isEmpty()) {
+            sb.append("\nIngredientes:\n");
+            for (String i : ings) sb.append("• ").append(i).append("\n");
+        }
+        java.util.List<String> pasos = receta.getPasos();
+        if (pasos != null && !pasos.isEmpty()) {
+            sb.append("\nPasos:\n");
+            int n = 1;
+            for (String p : pasos) sb.append(n++).append(". ").append(p).append("\n");
+        }
+        sb.append("\n— Sazón");
+
         Intent share = new Intent(Intent.ACTION_SEND);
         share.setType("text/plain");
-        share.putExtra(Intent.EXTRA_TEXT, texto);
+        share.putExtra(Intent.EXTRA_SUBJECT,
+                receta.getTitulo() != null ? receta.getTitulo() : "Receta");
+        share.putExtra(Intent.EXTRA_TEXT, sb.toString());
         startActivity(Intent.createChooser(share, "Compartir receta"));
     }
 
