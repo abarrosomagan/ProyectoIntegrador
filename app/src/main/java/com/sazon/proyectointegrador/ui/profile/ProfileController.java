@@ -333,6 +333,7 @@ public class ProfileController {
                         tvStatRecipes.setText(String.valueOf(my.size()));
                     if (tvChefRank != null)
                         tvChefRank.setText(chefRankFor(my.size()));
+                    pintarResumenStats();
                     if (currentTab == TAB_MY) showMy();
                     if (swipeProfile != null) swipeProfile.setRefreshing(false);
                 },
@@ -369,6 +370,37 @@ public class ProfileController {
                     if (currentTab == TAB_LIKED) showLiked();
                 },
                 e -> { /* idem */ });
+    }
+
+    /**
+     * Pinta una línea pequeña debajo del rango con el total de likes y de
+     * vistas acumulados en las recetas propias del usuario.
+     */
+    private void pintarResumenStats() {
+        android.widget.TextView tvLine = a.findViewById(R.id.tvProfileStatsLine);
+        if (tvLine == null) return;
+        if (my.isEmpty()) {
+            tvLine.setVisibility(android.view.View.GONE);
+            return;
+        }
+        long totalLikes = 0;
+        long totalViews = 0;
+        for (Publicacion p : my) {
+            totalLikes += Math.max(0, p.getLikes());
+            totalViews += Math.max(0, p.getViews());
+        }
+        String txt = "❤ " + abreviar(totalLikes) + " likes  ·  👁 "
+                + abreviar(totalViews) + " vistas";
+        tvLine.setText(txt);
+        tvLine.setVisibility(android.view.View.VISIBLE);
+    }
+
+    /** "1.2k" para grandes, número plano para pequeños. */
+    private static String abreviar(long n) {
+        if (n < 1000) return String.valueOf(n);
+        double k = n / 1000.0;
+        return String.format(java.util.Locale.getDefault(),
+                k < 10 ? "%.1fk" : "%.0fk", k);
     }
 
     private void aplicarEstadoUsuario(Publicacion p) {
@@ -584,6 +616,7 @@ public class ProfileController {
         }
 
         if (tvStatRecipes != null) tvStatRecipes.setText(String.valueOf(my.size()));
+        pintarResumenStats();
         if (tvStatFollowers != null) tvStatFollowers.setText(
                 String.valueOf(com.sazon.proyectointegrador.util.DemoData.demoFollowers()));
         if (tvStatFollowing != null) tvStatFollowing.setText(
