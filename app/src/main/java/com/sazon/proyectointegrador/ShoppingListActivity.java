@@ -56,7 +56,40 @@ public class ShoppingListActivity extends AppCompatActivity {
             recargar();
         });
 
+        ImageButton btnSort = findViewById(R.id.btnSortShopping);
+        if (btnSort != null) btnSort.setOnClickListener(v -> ordenarAlfabeticamente());
+
+        ImageButton btnShare = findViewById(R.id.btnShareShopping);
+        if (btnShare != null) btnShare.setOnClickListener(v -> compartirLista());
+
         recargar();
+    }
+
+    private void ordenarAlfabeticamente() {
+        if (data.isEmpty()) return;
+        java.util.Collections.sort(data, (a, b) -> {
+            if (a.checked != b.checked) return a.checked ? 1 : -1;
+            return a.text.compareToIgnoreCase(b.text);
+        });
+        ShoppingList.update(this, data);
+        adapter.notifyDataSetChanged();
+    }
+
+    private void compartirLista() {
+        if (data.isEmpty()) return;
+        StringBuilder sb = new StringBuilder("🛒 Lista de la compra (Sazón):\n");
+        for (ShoppingList.Item it : data) {
+            sb.append(it.checked ? "✓ " : "• ").append(it.text);
+            if (it.recipe != null && !it.recipe.isEmpty()) {
+                sb.append("  (").append(it.recipe).append(")");
+            }
+            sb.append("\n");
+        }
+        android.content.Intent share = new android.content.Intent(android.content.Intent.ACTION_SEND);
+        share.setType("text/plain");
+        share.putExtra(android.content.Intent.EXTRA_SUBJECT, "Mi lista de la compra");
+        share.putExtra(android.content.Intent.EXTRA_TEXT, sb.toString());
+        startActivity(android.content.Intent.createChooser(share, "Compartir lista"));
     }
 
     @Override
