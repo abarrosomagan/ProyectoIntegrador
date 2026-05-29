@@ -49,6 +49,33 @@ public class MainActivity extends AppCompatActivity {
 
         setupBottomNav();
         setupFab();
+        avisoEmailNoVerificado();
+    }
+
+    /**
+     * Si el usuario tiene cuenta pero el email no está verificado, se le ofrece
+     * reenviar el correo de verificación. Una vez por sesión.
+     */
+    private boolean emailWarningShown = false;
+    private void avisoEmailNoVerificado() {
+        if (emailWarningShown) return;
+        com.google.firebase.auth.FirebaseUser user =
+                com.sazon.proyectointegrador.util.SessionManager.currentUser();
+        if (user == null || user.isEmailVerified()) return;
+        emailWarningShown = true;
+        com.google.android.material.snackbar.Snackbar
+                .make(findViewById(android.R.id.content),
+                        "Verifica tu correo para asegurar tu cuenta",
+                        com.google.android.material.snackbar.Snackbar.LENGTH_LONG)
+                .setAction("Reenviar", v ->
+                        user.sendEmailVerification()
+                                .addOnSuccessListener(x -> android.widget.Toast.makeText(this,
+                                        "Correo de verificación enviado",
+                                        android.widget.Toast.LENGTH_SHORT).show())
+                                .addOnFailureListener(e -> android.widget.Toast.makeText(this,
+                                        "No se pudo enviar ahora",
+                                        android.widget.Toast.LENGTH_SHORT).show()))
+                .show();
     }
 
     private void setupFab() {

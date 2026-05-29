@@ -117,6 +117,9 @@ public class RegisterActivity extends AppCompatActivity {
                                     .setDisplayName(name)
                                     .build();
 
+                    // Envío del correo de verificación (silencioso, no bloquea el alta)
+                    user.sendEmailVerification();
+
                     user.updateProfile(profileUpdates)
                             .addOnCompleteListener(this, task2 -> {
                                 // Cacheamos en SharedPreferences para que el saludo del feed lo coja al vuelo
