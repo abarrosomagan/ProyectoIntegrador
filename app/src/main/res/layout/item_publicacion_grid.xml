@@ -4,7 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/gridItemRoot"
     android:layout_width="match_parent"
-    android:layout_height="0dp"
+    android:layout_height="120dp"
     android:layout_margin="3dp"
     android:background="@drawable/bg_grid_tile"
     android:foreground="?attr/selectableItemBackground"

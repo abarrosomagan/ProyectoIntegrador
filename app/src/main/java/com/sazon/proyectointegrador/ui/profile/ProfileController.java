@@ -326,8 +326,6 @@ public class ProfileController {
                             aplicarEstadoUsuario(p);
                             my.add(p);
                         }
-                    } else if (com.sazon.proyectointegrador.util.DemoData.ENABLED) {
-                        my.addAll(com.sazon.proyectointegrador.util.DemoData.recetasPropias());
                     }
                     if (tvStatRecipes != null)
                         tvStatRecipes.setText(String.valueOf(my.size()));
@@ -350,8 +348,6 @@ public class ProfileController {
                             p.setGuardada(true);
                             saved.add(p);
                         }
-                    } else if (com.sazon.proyectointegrador.util.DemoData.ENABLED) {
-                        saved.addAll(com.sazon.proyectointegrador.util.DemoData.recetasGuardadas());
                     }
                     if (currentTab == TAB_SAVED) showSaved();
                 },
