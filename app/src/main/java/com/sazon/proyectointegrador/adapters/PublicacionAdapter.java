@@ -97,6 +97,11 @@ public class PublicacionAdapter extends RecyclerView.Adapter<PublicacionAdapter.
                 guardada ? R.drawable.ic_bookmark_filled : R.drawable.ic_bookmark_empty
         );
 
+        h.btnGuardar.setColorFilter(ContextCompat.getColor(
+                h.btnGuardar.getContext(),
+                guardada ? R.color.color_principal_variante : R.color.icono_inactivo
+        ));
+
         h.btnGuardar.setOnClickListener(v -> {
             String uid = SessionManager.currentUid();
             String recipeId = p.getId();
