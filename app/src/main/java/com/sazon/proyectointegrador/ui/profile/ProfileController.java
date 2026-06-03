@@ -699,7 +699,6 @@ public class ProfileController {
     private void showMoreMenu(View anchor) {
         androidx.appcompat.widget.PopupMenu menu = new androidx.appcompat.widget.PopupMenu(a, anchor);
         menu.getMenu().add(0, 1, 0, "Ajustes");
-        menu.getMenu().add(0, 2, 1, "Actividad");
         menu.getMenu().add(0, 3, 2, "Explorar");
         menu.getMenu().add(0, 4, 3, "Acerca de");
         menu.getMenu().add(0, 5, 4, "Cerrar sesión");
@@ -710,10 +709,6 @@ public class ProfileController {
             if (id == 1) {
                 a.startActivity(new Intent(a,
                         com.sazon.proyectointegrador.SettingsActivity.class));
-                return true;
-            } else if (id == 2) {
-                a.startActivity(new Intent(a,
-                        com.sazon.proyectointegrador.ActivityActivity.class));
                 return true;
             } else if (id == 3) {
                 a.startActivity(new Intent(a,
