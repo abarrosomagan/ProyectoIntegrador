@@ -51,4 +51,8 @@
     <!-- Saludable / Vegano -->
     <color name="color_saludable">#7FB77E</color>
 
+    <!-- BORDES / CHIPS -->
+    <color name="borde_suave">#F0E2D8</color>
+    <color name="fondo_chip">#FFF1E6</color>
+
 </resources>

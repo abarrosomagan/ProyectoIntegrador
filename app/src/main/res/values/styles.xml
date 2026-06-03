@@ -33,4 +33,9 @@
         <item name="android:height">32dp</item>
         <item name="marginHorizontal">4dp</item>
     </style>
+    <style name="ShapeAppearanceSazonRecipeImage">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">18dp</item>
+    </style>
+
 </resources>

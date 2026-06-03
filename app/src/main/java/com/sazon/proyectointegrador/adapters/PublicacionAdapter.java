@@ -94,7 +94,7 @@ public class PublicacionAdapter extends RecyclerView.Adapter<PublicacionAdapter.
 
         // Guardar: pinta icono + persiste en Firestore
         h.btnGuardar.setImageResource(
-                guardada ? android.R.drawable.btn_star_big_on : android.R.drawable.btn_star_big_off
+                guardada ? R.drawable.ic_bookmark_filled : R.drawable.ic_bookmark_empty
         );
 
         h.btnGuardar.setOnClickListener(v -> {
