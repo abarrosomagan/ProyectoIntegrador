@@ -85,7 +85,9 @@
             android:name=".ExploreActivity"
             android:exported="false"
             android:parentActivityName=".MainActivity" />
-
+        <activity
+            android:name=".AboutActivity"
+            android:exported="false" />
     </application>
 
 </manifest>

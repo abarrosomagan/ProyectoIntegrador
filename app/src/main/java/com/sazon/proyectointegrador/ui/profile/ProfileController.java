@@ -720,7 +720,7 @@ public class ProfileController {
                         com.sazon.proyectointegrador.ExploreActivity.class));
                 return true;
             } else if (id == 4) {
-                Toast.makeText(a, "Recetas Social v1 (pendiente)", Toast.LENGTH_SHORT).show();
+                a.startActivity(new Intent(a, com.sazon.proyectointegrador.AboutActivity.class));
                 return true;
             } else if (id == 5) {
                 confirmLogout();
