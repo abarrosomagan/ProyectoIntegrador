@@ -40,6 +40,7 @@
                 app:tint="@color/texto_principal" />
 
             <TextView
+                android:id="@+id/tvCreateRecipeHeaderTitle"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="4dp"

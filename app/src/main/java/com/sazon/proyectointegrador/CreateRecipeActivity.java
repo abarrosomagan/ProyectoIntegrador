@@ -31,7 +31,7 @@ public class CreateRecipeActivity extends AppCompatActivity {
     private TextInputLayout tilTitle, tilDesc, tilPrepMinutes, tilServings;
     private TextInputEditText etTitle, etDesc, etPrepMinutes, etServings, etDifficulty, etTags;
     private TextInputEditText etIngredientes, etPasos;
-    private TextView tvScreenTitle, tvScreenSubtitle;
+    private TextView tvScreenTitle, tvScreenSubtitle, tvHeaderTitle;
     private MaterialButton btnPublish, btnRemoveImage;
     private ImageButton btnCancel;
     private MaterialCardView cardImagePicker;
@@ -79,6 +79,7 @@ public class CreateRecipeActivity extends AppCompatActivity {
         setupIngredienteAutocomplete();
         tvScreenTitle = findViewById(R.id.tvCreateRecipeTitle);
         tvScreenSubtitle = findViewById(R.id.tvCreateRecipeSubtitle);
+        tvHeaderTitle = findViewById(R.id.tvCreateRecipeHeaderTitle);
         btnPublish = findViewById(R.id.btnPublishRecipe);
         btnRemoveImage = findViewById(R.id.btnRemoveRecipeImage);
         btnCancel  = findViewById(R.id.btnCancelRecipe);
