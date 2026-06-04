@@ -1,286 +1,105 @@
-# Sazón
+# Sazon
 
-Sazón es una aplicación Android para personas aficionadas a la cocina que quieren publicar recetas, descubrir platos de otros usuarios, guardar ideas, seguir perfiles y conversar dentro de una comunidad gastronómica.
+Sazon es una aplicacion Android de comunidad gastronomica. Permite publicar recetas, descubrir platos de otros usuarios, seguir perfiles, guardar ideas, comentar, chatear y preparar una lista de la compra a partir de los ingredientes de cada receta.
 
-El proyecto forma parte del **Proyecto Integrador** del ciclo de **Desarrollo de Aplicaciones Multiplataforma (DAM)** y se desarrolla de forma incremental, con Firebase como base de autenticación, datos en tiempo real y almacenamiento.
+El proyecto forma parte del Proyecto Integrador de Desarrollo de Aplicaciones Multiplataforma y esta construido con Java, Android SDK, Firebase Auth, Cloud Firestore, Material Design, AndroidX y Glide.
 
----
+## Documentacion principal
 
-## Diseño en Figma
+La documentacion profesional completa del proyecto esta en:
 
-El diseño de la aplicación se ha realizado en Figma y sirve como referencia visual para la implementación en Android.
+- [docs/documentacion-profesional-sazon.md](docs/documentacion-profesional-sazon.md)
 
-https://www.figma.com/design/yHjedo6Y4G4Co4WEa7LY2A/Sin-t%C3%ADtulo?node-id=0-1&p=f&t=fkQQFC4GstUwoPPk-0
+Documentos auxiliares:
 
----
+- [docs/demo-checklist.md](docs/demo-checklist.md)
+- [docs/firebase-security.md](docs/firebase-security.md)
 
-## Autores
+## Estado del proyecto
 
-**Alejandro Barroso**  
-Developer y organizador del repositorio
+La aplicacion ya cubre el flujo principal de una red social de cocina:
 
-**Fernando Cecilia**  
-Developer y organizador del proyecto
+- Autenticacion con email y contrasena mediante Firebase Auth.
+- Registro de usuario, aviso de correo no verificado y recuperacion de contrasena.
+- Feed de recetas con modos Para ti, Siguiendo y Populares.
+- Busqueda de recetas por titulo, descripcion, autor, dificultad y etiquetas.
+- Creacion y edicion de recetas con imagen opcional, ingredientes, pasos, dificultad, tiempo, raciones y etiquetas.
+- Detalle de receta con likes, guardados, comentarios, visualizaciones, compartir, enviar a chat, modo cocinar y lista de la compra.
+- Perfil propio con recetas publicadas, guardadas y marcadas con me gusta.
+- Perfil ajeno con seguimiento, estadisticas y navegacion a seguidores y seguidos.
+- Explorador de recetas y chefs con filtros y ordenacion.
+- Actividad social para likes, guardados, comentarios y follows.
+- Chat en tiempo real con presencia, indicador de escritura, lectura, reacciones, edicion, borrado, fijado, silenciado, ocultado y borradores.
+- Lista de la compra local con marcado, ordenacion, limpieza y compartir.
+- Pantalla de ajustes y pantalla Acerca de.
 
-Ambos autores participan en el diseño, la planificación y el desarrollo técnico de la aplicación.
+## Cuentas de demo
 
-> **Eh Ale 👋** — te dejo cinco pantallas sueltas para que arranques con el bloque "Ayuda y entorno": `AboutActivity`, `HelpActivity`, `ContactActivity`, `LicensesActivity` y `ReportActivity` (esta última escribe en `/reports`, las reglas ya están). Mete todo en `com.sazon.proyectointegrador.alejandro` y los layouts con prefijo `alej_`. Saca una rama propia desde `Fernando` y vas tirando PRs según las cierres. No toques nada fuera de tu paquete. ¡Suerte! 🍳
+El script de datos de demo prepara estas cuentas:
 
----
-
-## Cuentas de prueba
-
-Para revisar la app sin registrarse hay cuentas de demostración en Firebase Authentication. Son cuentas de prueba con datos ficticios:
-
-| Correo | Contraseña |
+| Correo | Contrasena |
 |---|---|
 | `fer1@test.com` | `123456` |
 | `fer2@test.com` | `123456` |
 | `test1@sazon.com` | `123456` |
 
-Pareja recomendada para probar el chat en dos dispositivos: `fer1@test.com` y `fer2@test.com`.
+Pareja recomendada para probar chat en dos dispositivos o dos emuladores: `fer1@test.com` y `fer2@test.com`.
 
----
-
-## Estado actual
-
-El proyecto ya tiene implementado el flujo principal de una red social de recetas:
-
-- **Autenticación** con Firebase Auth mediante email y contraseña.
-- **Recuperación de contraseña** por correo.
-- **Registro** con creación de usuario y perfil base en Firestore.
-- **Feed de recetas** alimentado desde Firestore, con buscador y pull-to-refresh.
-- **Creación de recetas** desde la app, con foto opcional comprimida y guardada en Firestore.
-- **Edición de recetas propias** con actualización de título, descripción y foto.
-- **Detalle de receta** con acciones de like, guardar, comentar, compartir, eliminar y acceso al perfil del autor.
-- **Comentarios en recetas** en tiempo real mediante subcolecciones de Firestore.
-- **Likes y guardados persistentes** en Firestore, con estado por usuario en feed y detalle.
-- **Perfil propio** con foto comprimida guardada en Firestore, nombre, biografía, contadores y pestañas de recetas propias y guardadas.
-- **Perfil ajeno** con carga de datos reales y botón de seguir o dejar de seguir.
-- **Sistema de seguimiento** con contadores y listas navegables de seguidores y siguiendo.
-- **Chats en tiempo real** con Firestore, lista de conversaciones y búsqueda de usuarios por correo.
-- **Mensajes** con burbujas diferenciadas, separadores de fecha, hora, lectura básica, presencia, indicador de escribiendo y aviso interno de no leído.
-- **Modo demo** para mostrar contenido cuando todavía no hay datos reales.
-
----
-
-## Funcionalidades pendientes
-
-Los siguientes puntos siguen abiertos para completar la experiencia final:
-
-- Recorte de imagen de avatar.
-- Notificaciones push.
-- Pantalla de ajustes completa.
-- Login con Google.
-- Revisión de reglas de Firebase para un entorno de producción.
-
----
-
-## Pantallas diseñadas
-
-El diseño cubre las principales pantallas de navegación de SAZÓN, siguiendo una estética basada en Material Design 3 y una identidad visual centrada en tonos cálidos relacionados con la gastronomía.
-
-### Splash Screen
-
-Pantalla de bienvenida mostrada al iniciar la aplicación.
-
-![Splash Screen](images/splash.png)
-
-### Registro
-
-Permite crear una nueva cuenta para acceder a la comunidad.
-
-![Registro](images/Register.png)
-
-### Feed Principal
-
-Pantalla principal donde los usuarios descubren y exploran nuevas recetas publicadas por la comunidad.
-
-![Feed Principal](images/Feed.png)
-
-### Detalle de Receta
-
-Vista completa de una receta con imagen, ingredientes, pasos de elaboración e información del autor.
-
-![Detalle de Receta](images/Receta.png)
-
-### Crear Receta
-
-Formulario para publicar nuevas recetas añadiendo imágenes, ingredientes y pasos de preparación.
-
-![Crear Receta](images/CrearReceta.png)
-
-### Perfil de Usuario
-
-Espacio personal donde se muestran las recetas publicadas, recetas guardadas y la información del usuario.
-
-![Perfil](images/Perfil.png)
-
----
-
-## Arquitectura
-
-La aplicación usa una arquitectura ligera basada en **Activities**, **Controllers**, **Adapters**, modelos y repositorios auxiliares.
-
-```text
-app/src/main/java/com/sazon/proyectointegrador/
- ├── SplashActivity
- ├── LoginActivity
- ├── RegisterActivity
- ├── MainActivity
- ├── ChatActivity
- ├── ProfileActivity
- ├── FollowListActivity
- ├── CreateRecipeActivity
- ├── RecipeDetailActivity
- ├── ui/
- │    ├── feed/FeedController
- │    ├── chats/ChatsController
- │    └── profile/ProfileController
- ├── adapters/
- │    ├── ChatThreadAdapter
- │    ├── ChatMessageAdapter
- │    ├── PublicacionAdapter
- │    ├── PublicacionGridAdapter
- │    ├── RecipeCommentAdapter
- │    └── UserListAdapter
- ├── model/
- │    ├── Publicacion
- │    ├── ChatThread
- │    ├── ChatMessage
- │    ├── ChatItem
- │    ├── ChatDateHeader
- │    ├── RecipeComment
- │    └── UserListItem
- └── util/
-      ├── SessionManager
-      ├── RecipeRepository
-      ├── FollowRepository
-      ├── AvatarHelper
-      ├── RecipeImageHelper
-      ├── DemoData
-      └── SimpleTextWatcher
-```
-
----
-
-## Modelo de datos
-
-### Firestore
-
-```text
-users/{uid}
-  uid, name, email, bio, avatarUrl, createdAt
-  followers, following, recipes
-
-users/{uid}/followers/{followerUid}
-users/{uid}/following/{followingUid}
-users/{uid}/saved/{recipeId}
-
-recipes/{recipeId}
-  authorId, autor, titulo, descripcion, imageUrl, likes, createdAt
-
-imageUrl guarda una URL antigua o una imagen JPEG comprimida en formato data URL.
-
-recipes/{recipeId}/likes/{uid}
-recipes/{recipeId}/comments/{commentId}
-  recipeId, authorId, authorName, text, createdAt
-
-chats/{chatId}
-  participants
-  participantsNames
-  lastMessage, lastSenderId, lastMessageAt
-  lastReadAt.{uid}
-  presence.{uid}.active, presence.{uid}.typing, presence.{uid}.lastSeen
-
-chats/{chatId}/messages/{msgId}
-  text, senderId, createdAt, readAt
-```
-
-## Tecnologías
-
-- Java
-- Android SDK
-- Firebase Auth
-- Cloud Firestore
-- Firebase Analytics
-- Material Design 3
-- AndroidX
-- Glide
-- Gradle Kotlin DSL
-- Git y GitHub
-- Figma
-
----
-
-## Instalación
+## Puesta en marcha
 
 ```bash
 git clone https://github.com/abarrosomagan/ProyectoIntegrador.git
+cd ProyectoIntegrador
 ```
 
 1. Abrir el proyecto en Android Studio.
 2. Sincronizar Gradle.
-3. Usar un emulador con Google Play Services o un dispositivo Android físico.
-4. Configurar Firebase para el proyecto correspondiente.
-5. Habilitar Authentication con email y contraseña.
-6. Habilitar Firestore Database.
-7. Ejecutar la app desde Android Studio.
+3. Usar un emulador con Google Play Services o un dispositivo Android fisico.
+4. Configurar Firebase con el archivo `app/google-services.json`.
+5. Habilitar Authentication con email/contrasena.
+6. Habilitar Cloud Firestore.
+7. Desplegar reglas e indices si se usa el proyecto Firebase real:
 
----
+```bash
+firebase deploy --only firestore
+```
 
-## Seguridad Firebase
-
-La configuración versionada está en:
-
-- `firestore.rules`
-- `firestore.indexes.json`
-- `firebase.json`
-- `docs/firebase-security.md`
-- `docs/demo-checklist.md`
-- `scripts/seed-demo.mjs`
-
-El proyecto no usa Firebase Storage. Las imágenes se comprimen y se guardan en Firestore para mantener el despliegue dentro de opciones gratuitas.
-
-## Demo
-
-La guía de preparación para presentar la app está en `docs/demo-checklist.md`.
-
-Para cargar datos de demo en Firebase:
+8. Cargar datos de demo si se necesita una presentacion estable:
 
 ```bash
 node scripts/seed-demo.mjs
 ```
 
-## Roadmap
+9. Compilar la app:
 
-1. Añadir pantalla de ajustes completa.
-2. Mejorar búsqueda y exploración de recetas.
-3. Añadir categorías, dificultad y tiempo de preparación.
-4. Valorar notificaciones push si el proyecto final lo exige.
+```bash
+./gradlew :app:assembleDebug
+```
 
-## Próximos avances propuestos
+En Windows:
 
-### Normales
+```powershell
+.\gradlew.bat :app:assembleDebug
+```
 
-- Pantalla de ajustes: perfil, sesión, privacidad básica y borrar cuenta.
-- Búsqueda por título, autor y texto de receta con filtros rápidos.
-- Categorías de recetas: dulce, salado, rápido, saludable, vegano, horno.
-- Campos de receta más estructurados: tiempo, dificultad y raciones.
-- Validación visual de pantallas principales antes de entrega.
+## Decisiones tecnicas clave
 
-### Ambiciosos
+- No se usa Firebase Storage para mantener el proyecto dentro de opciones gratuitas.
+- Las imagenes se comprimen y se guardan como `data:image/jpeg;base64,...` en Firestore.
+- Los contadores sociales se denormalizan para pintar rapido.
+- Los estados por usuario, como likes y guardados, se almacenan tambien en subcolecciones del usuario.
+- La coherencia visual entre feed, detalle y perfil se propaga en memoria con `RecipeStateBus`.
+- La lista de la compra y los borradores de chat se guardan localmente en `SharedPreferences`.
 
-- Ingredientes y pasos estructurados por receta.
-- Modo cocinar paso a paso.
-- Colecciones personales de recetas.
-- Ranking de chefs y recetas populares.
-- Planificador semanal y lista de la compra.
+## Diseno
 
----
+El diseno base se trabajo en Figma:
 
-## Licencia
+https://www.figma.com/design/yHjedo6Y4G4Co4WEa7LY2A/Sin-t%C3%ADtulo?node-id=0-1&p=f&t=fkQQFC4GstUwoPPk-0
 
-Proyecto desarrollado con fines académicos.
+## Autores
 
-El contenido puede utilizarse como referencia educativa citando a los autores.
+- Alejandro Barroso
+- Fernando Cecilia
+
+Proyecto desarrollado con fines academicos.
