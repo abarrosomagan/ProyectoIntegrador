@@ -190,18 +190,43 @@ public class ChatActivity extends AppCompatActivity {
     private void limpiarFlagsAlEntrar() {
         String uid = SessionManager.currentUid();
         if (uid == null || chatId == null) return;
+
         Map<String, Object> data = new HashMap<>();
         data.put("markedUnread", false);
         data.put("hidden", false);
         data.put("updatedAt", FieldValue.serverTimestamp());
+
         SessionManager.db()
                 .collection(SessionManager.COLLECTION_USERS)
                 .document(uid)
                 .collection("chatSettings")
                 .document(chatId)
                 .set(data, SetOptions.merge());
-    }
 
+        Map<String, Object> readUpdate = new HashMap<>();
+        readUpdate.put("lastReadAt." + uid, FieldValue.serverTimestamp());
+
+        SessionManager.db()
+                .collection(SessionManager.COLLECTION_USERS)
+                .document(uid)
+                .collection("chatSettings")
+                .document(chatId)
+                .set(data, SetOptions.merge());
+
+        marcarConversacionLeida();
+    }
+    private void marcarConversacionLeida() {
+        String uid = SessionManager.currentUid();
+        if (uid == null || chatId == null) return;
+
+        Map<String, Object> readUpdate = new HashMap<>();
+        readUpdate.put("lastReadAt." + uid, FieldValue.serverTimestamp());
+
+        SessionManager.db()
+                .collection(SessionManager.COLLECTION_CHATS)
+                .document(chatId)
+                .set(readUpdate, SetOptions.merge());
+    }
     @Override
     protected void onStop() {
         super.onStop();
@@ -356,6 +381,8 @@ public class ChatActivity extends AppCompatActivity {
                     if (!docsParaMarcar.isEmpty()) {
                         marcarComoLeidos(docsParaMarcar, meUid);
                     }
+
+                    marcarConversacionLeida();
                 });
     }
 
@@ -382,10 +409,15 @@ public class ChatActivity extends AppCompatActivity {
 
         Map<String, Object> readUpdate = new HashMap<>();
         readUpdate.put("lastReadAt." + meUid, FieldValue.serverTimestamp());
+
         SessionManager.db()
                 .collection(SessionManager.COLLECTION_CHATS)
                 .document(chatId)
-                .set(readUpdate, SetOptions.merge());
+                .update(readUpdate)
+                .addOnSuccessListener(v ->
+                        android.util.Log.d("CHAT", "lastReadAt actualizado"))
+                .addOnFailureListener(e ->
+                        android.util.Log.e("CHAT", "Error lastReadAt", e));
     }
 
     // ===== Envío =====

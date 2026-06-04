@@ -20,7 +20,7 @@ import java.util.List;
  */
 public final class DemoData {
 
-    public static final boolean ENABLED = true;
+    public static final boolean ENABLED = false;
 
     public static final String DEMO_PREFIX = "demo:";
 

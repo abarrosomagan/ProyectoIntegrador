@@ -55,16 +55,13 @@ public class ChatsController {
     private ListenerRegistration chatSettingsListener;
     private ListenerRegistration blockedListener;
 
-    /** uids que tengo bloqueados — sus chats no aparecen en la lista. */
     private final java.util.HashSet<String> bloqueados = new java.util.HashSet<>();
 
-    /** Caches por chatId del estado silenciado / fijado / oculto / marcado no leído del usuario actual. */
     private final HashMap<String, Boolean> mutedByChatId = new HashMap<>();
     private final HashMap<String, Boolean> pinnedByChatId = new HashMap<>();
     private final HashMap<String, Boolean> hiddenByChatId = new HashMap<>();
     private final HashMap<String, Boolean> markedUnreadByChatId = new HashMap<>();
 
-    /** Guardamos el último snapshot ordenado para repintar tras cambios de chatSettings o de filtro. */
     private final ArrayList<Object[]> filasUltimoSnapshot = new ArrayList<>();
 
     private EditText etBuscarChats;
@@ -99,10 +96,10 @@ public class ChatsController {
         }
     }
 
-    /** Listener sobre users/{uid}/blocked: lista en tiempo real. */
     private void suscribirBloqueados() {
         String uid = SessionManager.currentUid();
         if (uid == null) return;
+
         blockedListener = SessionManager.db()
                 .collection(SessionManager.COLLECTION_USERS)
                 .document(uid)
@@ -128,27 +125,61 @@ public class ChatsController {
         if (rvChats == null) return;
         rvChats.setLayoutManager(new LinearLayoutManager(a));
 
-        chatsAdapter = new ChatThreadAdapter(chatsData, chat -> {
-            Intent i = new Intent(a, ChatActivity.class);
-            i.putExtra(ChatActivity.EXTRA_CHAT_ID, chat.getId());
-            i.putExtra(ChatActivity.EXTRA_CHAT_NAME, chat.getName());
-            a.startActivity(i);
-        });
-
+        chatsAdapter = new ChatThreadAdapter(chatsData, this::abrirChat);
         chatsAdapter.setOnChatLongClick(this::mostrarDialogoOpcionesChat);
 
         rvChats.setAdapter(chatsAdapter);
+    }
+
+    private void abrirChat(ChatThread chat) {
+        if (chat == null) return;
+
+        marcarChatComoLeido(chat.getId());
+
+        Intent i = new Intent(a, ChatActivity.class);
+        i.putExtra(ChatActivity.EXTRA_CHAT_ID, chat.getId());
+        i.putExtra(ChatActivity.EXTRA_CHAT_NAME, chat.getName());
+        a.startActivity(i);
+    }
+
+    private void marcarChatComoLeido(String chatId) {
+        String uid = SessionManager.currentUid();
+        if (uid == null || chatId == null) return;
+
+        markedUnreadByChatId.remove(chatId);
+
+        Map<String, Object> settings = new HashMap<>();
+        settings.put("markedUnread", false);
+        settings.put("updatedAt", FieldValue.serverTimestamp());
+
+        SessionManager.db()
+                .collection(SessionManager.COLLECTION_USERS)
+                .document(uid)
+                .collection("chatSettings")
+                .document(chatId)
+                .set(settings, SetOptions.merge());
+
+        Map<String, Object> readUpdate = new HashMap<>();
+        readUpdate.put("lastReadAt." + uid, FieldValue.serverTimestamp());
+
+        SessionManager.db()
+                .collection(SessionManager.COLLECTION_CHATS)
+                .document(chatId)
+                .set(readUpdate, SetOptions.merge());
     }
 
     private void setupListeners() {
         if (btnNuevaConversacion != null) {
             btnNuevaConversacion.setOnClickListener(v -> mostrarDialogoNuevoChat());
         }
+
         if (etBuscarChats != null) {
             etBuscarChats.addTextChangedListener(new TextWatcher() {
                 @Override public void beforeTextChanged(CharSequence s, int st, int c, int af) {}
                 @Override public void onTextChanged(CharSequence s, int st, int b, int c) {}
-                @Override public void afterTextChanged(Editable s) {
+
+                @Override
+                public void afterTextChanged(Editable s) {
                     filtroActual = s == null ? "" : s.toString().trim().toLowerCase(Locale.getDefault());
                     repintarLista();
                 }
@@ -156,10 +187,9 @@ public class ChatsController {
         }
     }
 
-    // ===== Listener real de Firestore =====
-
     private void suscribirChats() {
         String uid = SessionManager.currentUid();
+
         if (uid == null) {
             if (DemoData.ENABLED) {
                 chatsData.clear();
@@ -170,15 +200,12 @@ public class ChatsController {
             return;
         }
 
-        // No ordeno en la query (no quiero forzar a Fernando a crear un índice compuesto en Firestore).
-        // Lo ordenamos en cliente con un map paralelo de timestamps.
         chatsListener = SessionManager.db()
                 .collection(SessionManager.COLLECTION_CHATS)
                 .whereArrayContains("participants", uid)
                 .addSnapshotListener((snap, e) -> {
                     if (e != null || snap == null) return;
 
-                    // Pares (ChatThread, lastMessageAt) para poder ordenar después
                     ArrayList<Object[]> filas = new ArrayList<>();
 
                     for (DocumentSnapshot doc : snap.getDocuments()) {
@@ -187,6 +214,7 @@ public class ChatsController {
                         String lastSenderId = doc.getString("lastSenderId");
                         Timestamp lastAt = doc.getTimestamp("lastMessageAt");
                         Timestamp lastReadAt = doc.getTimestamp("lastReadAt." + uid);
+
                         String otherUid = null;
                         List<String> participants = (List<String>) doc.get("participants");
                         if (participants != null) {
@@ -198,7 +226,6 @@ public class ChatsController {
                             }
                         }
 
-                        // Nombre del otro participante (el que NO soy yo)
                         String otherName = "Chat";
                         Object mapObj = doc.get("participantsNames");
                         if (mapObj instanceof Map) {
@@ -212,18 +239,23 @@ public class ChatsController {
                             }
                         }
 
-                        Boolean otherTyping = otherUid != null
+                        Boolean otherTypingValue = otherUid != null
                                 ? doc.getBoolean("presence." + otherUid + ".typing")
-                                : false;
-                        Boolean otherActive = otherUid != null
+                                : null;
+
+                        Boolean otherActiveValue = otherUid != null
                                 ? doc.getBoolean("presence." + otherUid + ".active")
-                                : false;
-                        String preview = Boolean.TRUE.equals(otherTyping)
+                                : null;
+
+                        boolean otherTyping = Boolean.TRUE.equals(otherTypingValue);
+                        boolean otherActive = Boolean.TRUE.equals(otherActiveValue);
+
+                        String preview = otherTyping
                                 ? "escribiendo..."
                                 : (lastMessage != null ? lastMessage : "");
 
                         boolean lastIsMine = lastSenderId != null && lastSenderId.equals(uid);
-                        // El otro ha leído mi último mensaje si su lastReadAt es >= lastAt
+
                         boolean lastReadByOther = false;
                         if (lastIsMine && lastAt != null && otherUid != null) {
                             Timestamp otherReadAt = doc.getTimestamp("lastReadAt." + otherUid);
@@ -233,23 +265,23 @@ public class ChatsController {
 
                         boolean muted = Boolean.TRUE.equals(mutedByChatId.get(chatId));
                         boolean pinned = Boolean.TRUE.equals(pinnedByChatId.get(chatId));
-                        boolean markedUnread = Boolean.TRUE.equals(markedUnreadByChatId.get(chatId));
+                        boolean realUnread = hasUnread(uid, lastSenderId, lastAt, lastReadAt);
+                        boolean markedUnread = realUnread && Boolean.TRUE.equals(markedUnreadByChatId.get(chatId));
 
-                        int unreadValue = (hasUnread(uid, lastSenderId, lastAt, lastReadAt) || markedUnread) ? 1 : 0;
-
+                        int unreadValue = (realUnread || markedUnread) ? 1 : 0;
                         ChatThread thread = new ChatThread(
                                 chatId,
                                 otherName,
                                 preview,
                                 formatChatTime(lastAt),
                                 unreadValue,
-                                Boolean.TRUE.equals(otherActive)
-                                        || Boolean.TRUE.equals(otherTyping),
+                                otherActive || otherTyping,
                                 lastIsMine,
                                 lastReadByOther,
                                 muted,
                                 pinned
                         );
+
                         filas.add(new Object[]{ thread, lastAt, otherUid });
                     }
 
@@ -260,39 +292,45 @@ public class ChatsController {
     }
 
     private void repintarLista() {
-        // Ordenamos: primero fijados, dentro de cada grupo por timestamp descendente
         Collections.sort(filasUltimoSnapshot, new Comparator<Object[]>() {
             @Override
             public int compare(Object[] a, Object[] b) {
                 ChatThread ca = (ChatThread) a[0];
                 ChatThread cb = (ChatThread) b[0];
+
                 if (ca.isPinned() != cb.isPinned()) {
                     return ca.isPinned() ? -1 : 1;
                 }
+
+                if ((ca.getUnread() > 0) != (cb.getUnread() > 0)) {
+                    return ca.getUnread() > 0 ? -1 : 1;
+                }
+
                 Timestamp ta = (Timestamp) a[1];
                 Timestamp tb = (Timestamp) b[1];
+
                 if (ta == null && tb == null) return 0;
                 if (ta == null) return 1;
                 if (tb == null) return -1;
+
                 return tb.compareTo(ta);
             }
         });
 
         chatsData.clear();
-        if (DemoData.ENABLED) {
-            for (ChatThread demo : DemoData.chats()) {
-                if (coincideFiltro(demo)) chatsData.add(demo);
-            }
-        }
+
+
+
         boolean buscando = !filtroActual.isEmpty();
+
         for (Object[] fila : filasUltimoSnapshot) {
             ChatThread t = (ChatThread) fila[0];
             String otherUid = fila.length > 2 ? (String) fila[2] : null;
-            // Chats con usuarios bloqueados no aparecen nunca
+
             if (otherUid != null && bloqueados.contains(otherUid)) continue;
-            // Ocultos no aparecen salvo que estés buscando explícitamente por nombre
             if (!buscando && Boolean.TRUE.equals(hiddenByChatId.get(t.getId()))) continue;
             if (!coincideFiltro(t)) continue;
+
             chatsData.add(t);
         }
 
@@ -302,12 +340,13 @@ public class ChatsController {
 
     private boolean coincideFiltro(ChatThread t) {
         if (filtroActual.isEmpty()) return true;
+
         String name = t.getName() == null ? "" : t.getName().toLowerCase(Locale.getDefault());
         String last = t.getLastMessage() == null ? "" : t.getLastMessage().toLowerCase(Locale.getDefault());
+
         return name.contains(filtroActual) || last.contains(filtroActual);
     }
 
-    /** Listener sobre users/{uid}/chatSettings: cambios de mute/pin del usuario actual. */
     private void suscribirChatSettings() {
         String uid = SessionManager.currentUid();
         if (uid == null) return;
@@ -323,17 +362,19 @@ public class ChatsController {
                     pinnedByChatId.clear();
                     hiddenByChatId.clear();
                     markedUnreadByChatId.clear();
+
                     for (DocumentSnapshot doc : snap.getDocuments()) {
                         String chatId = doc.getId();
+
                         if (Boolean.TRUE.equals(doc.getBoolean("muted"))) mutedByChatId.put(chatId, true);
                         if (Boolean.TRUE.equals(doc.getBoolean("pinned"))) pinnedByChatId.put(chatId, true);
                         if (Boolean.TRUE.equals(doc.getBoolean("hidden"))) hiddenByChatId.put(chatId, true);
                         if (Boolean.TRUE.equals(doc.getBoolean("markedUnread"))) markedUnreadByChatId.put(chatId, true);
                     }
 
-                    // Reaplicamos los flags al snapshot vigente y repintamos
                     for (Object[] fila : filasUltimoSnapshot) {
                         ChatThread t = (ChatThread) fila[0];
+
                         boolean muted = Boolean.TRUE.equals(mutedByChatId.get(t.getId()));
                         boolean pinned = Boolean.TRUE.equals(pinnedByChatId.get(t.getId()));
                         boolean markedUnread = Boolean.TRUE.equals(markedUnreadByChatId.get(t.getId()));
@@ -354,11 +395,10 @@ public class ChatsController {
                             );
                         }
                     }
+
                     repintarLista();
                 });
     }
-
-    // ===== Long-press: silenciar / fijar / marcar no leída / ocultar =====
 
     private void mostrarDialogoOpcionesChat(ChatThread chat) {
         String uid = SessionManager.currentUid();
@@ -378,7 +418,7 @@ public class ChatsController {
         new AlertDialog.Builder(a)
                 .setTitle(chat.getName())
                 .setItems(opciones, (d, which) -> {
-                    if (which == 0)      togglePinned(uid, chat.getId(), !pinned);
+                    if (which == 0) togglePinned(uid, chat.getId(), !pinned);
                     else if (which == 1) toggleMuted(uid, chat.getId(), !muted);
                     else if (which == 2) toggleMarkedUnread(uid, chat.getId(), !markedUnread);
                     else if (which == 3) confirmarBorrarConversacion(uid, chat);
@@ -390,6 +430,7 @@ public class ChatsController {
         Map<String, Object> data = new HashMap<>();
         data.put("markedUnread", newValue);
         data.put("updatedAt", FieldValue.serverTimestamp());
+
         SessionManager.db()
                 .collection(SessionManager.COLLECTION_USERS)
                 .document(uid)
@@ -415,6 +456,7 @@ public class ChatsController {
         data.put("hidden", true);
         data.put("pinned", false);
         data.put("updatedAt", FieldValue.serverTimestamp());
+
         SessionManager.db()
                 .collection(SessionManager.COLLECTION_USERS)
                 .document(uid)
@@ -431,6 +473,7 @@ public class ChatsController {
         Map<String, Object> data = new HashMap<>();
         data.put("pinned", newValue);
         data.put("updatedAt", FieldValue.serverTimestamp());
+
         SessionManager.db()
                 .collection(SessionManager.COLLECTION_USERS)
                 .document(uid)
@@ -445,6 +488,7 @@ public class ChatsController {
         Map<String, Object> data = new HashMap<>();
         data.put("muted", newValue);
         data.put("updatedAt", FieldValue.serverTimestamp());
+
         SessionManager.db()
                 .collection(SessionManager.COLLECTION_USERS)
                 .document(uid)
@@ -455,15 +499,9 @@ public class ChatsController {
                         Toast.makeText(a, "No se pudo actualizar el chat", Toast.LENGTH_SHORT).show());
     }
 
-    /**
-     * Hora del último mensaje:
-     *   - hoy   → "HH:mm"
-     *   - ayer  → "ayer"
-     *   - <7d   → "lun", "mar", "mié"…
-     *   - resto → "dd/MM"
-     */
     private static String formatChatTime(Timestamp ts) {
         if (ts == null) return "";
+
         Date date = ts.toDate();
 
         Calendar then = Calendar.getInstance();
@@ -472,17 +510,21 @@ public class ChatsController {
 
         boolean mismoDia = then.get(Calendar.YEAR) == now.get(Calendar.YEAR)
                 && then.get(Calendar.DAY_OF_YEAR) == now.get(Calendar.DAY_OF_YEAR);
+
         if (mismoDia) {
             return new SimpleDateFormat("HH:mm", new Locale("es", "ES")).format(date);
         }
 
         Calendar ayer = (Calendar) now.clone();
         ayer.add(Calendar.DAY_OF_YEAR, -1);
+
         boolean fueAyer = then.get(Calendar.YEAR) == ayer.get(Calendar.YEAR)
                 && then.get(Calendar.DAY_OF_YEAR) == ayer.get(Calendar.DAY_OF_YEAR);
+
         if (fueAyer) return "ayer";
 
         long diffMs = now.getTimeInMillis() - then.getTimeInMillis();
+
         if (diffMs < 7L * 24 * 60 * 60 * 1000) {
             return new SimpleDateFormat("EEE", new Locale("es", "ES")).format(date);
         }
@@ -496,17 +538,17 @@ public class ChatsController {
                                      Timestamp lastReadAt) {
         if (uid == null || lastSenderId == null || lastAt == null) return false;
         if (uid.equals(lastSenderId)) return false;
+
         return lastReadAt == null || lastAt.compareTo(lastReadAt) > 0;
     }
 
     private void actualizarEstadoVacio() {
         if (tvChatsVacio == null || rvChats == null) return;
+
         boolean vacio = chatsData.isEmpty();
         tvChatsVacio.setVisibility(vacio ? View.VISIBLE : View.GONE);
         rvChats.setVisibility(vacio ? View.GONE : View.VISIBLE);
     }
-
-    // ===== Nueva conversación =====
 
     private void mostrarDialogoNuevoChat() {
         if (!SessionManager.isAuthenticated()) return;
@@ -517,6 +559,7 @@ public class ChatsController {
                 | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
 
         int pad = (int) (16 * a.getResources().getDisplayMetrics().density);
+
         LinearLayout container = new LinearLayout(a);
         container.setOrientation(LinearLayout.VERTICAL);
         container.setPadding(pad * 2, pad, pad * 2, 0);
@@ -535,7 +578,6 @@ public class ChatsController {
 
     private void buscarUsuarioYAbrirChat(String query) {
         if (query.contains("@")) {
-            // Búsqueda exacta por email
             SessionManager.db()
                     .collection(SessionManager.COLLECTION_USERS)
                     .whereEqualTo("email", query)
@@ -547,17 +589,20 @@ public class ChatsController {
                                     Toast.LENGTH_SHORT).show();
                             return;
                         }
+
                         DocumentSnapshot doc = snap.getDocuments().get(0);
                         String otherUid = doc.getId();
                         String otherName = doc.getString("name");
+
                         if (otherName == null || otherName.isEmpty()) otherName = query;
+
                         crearOAbrirChatCon(otherUid, otherName);
                     })
                     .addOnFailureListener(e ->
                             Toast.makeText(a, "Error buscando usuario", Toast.LENGTH_SHORT).show());
             return;
         }
-        // Búsqueda por nombre con prefijo
+
         SessionManager.db()
                 .collection(SessionManager.COLLECTION_USERS)
                 .orderBy("name")
@@ -571,37 +616,41 @@ public class ChatsController {
                                 Toast.LENGTH_SHORT).show();
                         return;
                     }
+
                     String myUid = SessionManager.currentUid();
                     java.util.List<DocumentSnapshot> candidatos = new java.util.ArrayList<>();
+
                     for (DocumentSnapshot doc : snap.getDocuments()) {
                         if (myUid == null || !doc.getId().equals(myUid)) candidatos.add(doc);
                     }
+
                     if (candidatos.isEmpty()) {
                         Toast.makeText(a, "Eres tú mismo", Toast.LENGTH_SHORT).show();
                         return;
                     }
+
                     if (candidatos.size() == 1) {
                         DocumentSnapshot doc = candidatos.get(0);
                         String nombre = doc.getString("name");
-                        crearOAbrirChatCon(doc.getId(),
-                                nombre != null ? nombre : query);
+                        crearOAbrirChatCon(doc.getId(), nombre != null ? nombre : query);
                         return;
                     }
-                    // Varios candidatos → diálogo de selección
+
                     String[] nombres = new String[candidatos.size()];
+
                     for (int i = 0; i < candidatos.size(); i++) {
                         String n = candidatos.get(i).getString("name");
                         String em = candidatos.get(i).getString("email");
                         nombres[i] = (n != null ? n : "Sin nombre")
                                 + (em != null ? "  ·  " + em : "");
                     }
+
                     new AlertDialog.Builder(a)
                             .setTitle("Elige a quién escribir")
                             .setItems(nombres, (d, idx) -> {
                                 DocumentSnapshot doc = candidatos.get(idx);
                                 String nombre = doc.getString("name");
-                                crearOAbrirChatCon(doc.getId(),
-                                        nombre != null ? nombre : query);
+                                crearOAbrirChatCon(doc.getId(), nombre != null ? nombre : query);
                             })
                             .show();
                 })
@@ -611,10 +660,12 @@ public class ChatsController {
 
     private void crearOAbrirChatCon(String otherUid, String otherName) {
         String myUid = SessionManager.currentUid();
+
         if (myUid == null || myUid.equals(otherUid)) {
             Toast.makeText(a, "No puedes hablar contigo mismo", Toast.LENGTH_SHORT).show();
             return;
         }
+
         if (bloqueados.contains(otherUid)) {
             Toast.makeText(a, "Has bloqueado a " + otherName
                     + ". Desbloquéalo desde su perfil.", Toast.LENGTH_LONG).show();
@@ -623,11 +674,12 @@ public class ChatsController {
 
         String chatId = SessionManager.buildChatId(myUid, otherUid);
 
-        // Nombre cacheado en SharedPreferences si está; si no, email
         String myName = new SessionManager(a).getUserName();
+
         if (myName == null || myName.isEmpty()) {
             myName = SessionManager.currentEmail() != null
-                    ? SessionManager.currentEmail() : "Yo";
+                    ? SessionManager.currentEmail()
+                    : "Yo";
         }
 
         Map<String, Object> participantsNames = new HashMap<>();
@@ -641,11 +693,14 @@ public class ChatsController {
         data.put("lastMessageAt", FieldValue.serverTimestamp());
 
         final String finalOtherName = otherName;
+
         SessionManager.db()
                 .collection(SessionManager.COLLECTION_CHATS)
                 .document(chatId)
                 .set(data, SetOptions.merge())
                 .addOnSuccessListener(unused -> {
+                    marcarChatComoLeido(chatId);
+
                     Intent i = new Intent(a, ChatActivity.class);
                     i.putExtra(ChatActivity.EXTRA_CHAT_ID, chatId);
                     i.putExtra(ChatActivity.EXTRA_CHAT_NAME, finalOtherName);

@@ -78,35 +78,43 @@ Los siguientes puntos siguen abiertos para completar la experiencia final:
 
 ## Pantallas diseñadas
 
-El diseño cubre las principales pantallas de navegación de la app.
+El diseño cubre las principales pantallas de navegación de SAZÓN, siguiendo una estética basada en Material Design 3 y una identidad visual centrada en tonos cálidos relacionados con la gastronomía.
 
-### Pantalla de inicio
+### Splash Screen
 
-![Pantalla de inicio](images/splash.png)
+Pantalla de bienvenida mostrada al iniciar la aplicación.
+
+![Splash Screen](images/splash.png)
 
 ### Registro
 
-![Registro de usuario](images/register.png)
+Permite crear una nueva cuenta para acceder a la comunidad.
 
-### Inicio de sesión
+![Registro](images/Register.png)
 
-![Inicio de sesión](images/login.png)
+### Feed Principal
 
-### Feed principal
+Pantalla principal donde los usuarios descubren y exploran nuevas recetas publicadas por la comunidad.
 
-![Feed principal](images/feed.png)
+![Feed Principal](images/Feed.png)
 
-### Perfil
+### Detalle de Receta
 
-![Perfil de usuario](images/profile.png)
+Vista completa de una receta con imagen, ingredientes, pasos de elaboración e información del autor.
 
-### Mensajes
+![Detalle de Receta](images/Receta.png)
 
-![Mensajes](images/messages.png)
+### Crear Receta
 
-### Recetas guardadas
+Formulario para publicar nuevas recetas añadiendo imágenes, ingredientes y pasos de preparación.
 
-![Recetas guardadas](images/saved.png)
+![Crear Receta](images/CrearReceta.png)
+
+### Perfil de Usuario
+
+Espacio personal donde se muestran las recetas publicadas, recetas guardadas y la información del usuario.
+
+![Perfil](images/Perfil.png)
 
 ---
 
