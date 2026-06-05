@@ -1,8 +1,16 @@
 <resources>
 
+    <style name="Button">
+        <item name="android:fontFamily">@font/abel</item>
+    </style>
+
     <style name="Button.Primary">
         <item name="android:backgroundTint">@android:color/holo_orange_dark</item>
         <item name="android:textColor">@android:color/white</item>
+        <item name="android:fontFamily">@font/abel</item>
+    </style>
+
+    <style name="Text">
         <item name="android:fontFamily">@font/abel</item>
     </style>
 
@@ -17,10 +25,6 @@
         <item name="android:textColor">@android:color/darker_gray</item>
         <item name="android:fontFamily">@font/abel</item>
     </style>
-
-    <!-- ✅ ALIAS para compatibilidad con layouts antiguos -->
-    <style name="Button" parent="Button.Primary" />
-    <style name="Text" parent="Text.Body" />
 
     <style name="TemaSplash" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="android:windowBackground">@color/color_principal</item>
