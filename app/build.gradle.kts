@@ -12,8 +12,8 @@ android {
         applicationId = "com.sazon.proyectointegrador"
         minSdk = 28
         targetSdk = 36
-        versionCode = 2
-        versionName = "1.0.1"
+        versionCode = 3
+        versionName = "1.0.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -47,12 +47,8 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 
-    // Firebase (BoM gestiona versiones — NO especificar versiones manuales aquí,
-    // o se duplican clases con las que mete la BoM).
-    // Mantenemos 32.x mientras no configuremos reCAPTCHA Enterprise:
-    // las BoM 33+ exigen App Check con reCAPTCHA para el sign-in con email/password
-    // y devuelven CONFIGURATION_NOT_FOUND si no está montado.
-    implementation(platform("com.google.firebase:firebase-bom:31.5.0"))
+    // Firebase BoM gestiona las versiones de Auth, Firestore y Analytics.
+    implementation(platform("com.google.firebase:firebase-bom:34.14.0"))
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-analytics")
